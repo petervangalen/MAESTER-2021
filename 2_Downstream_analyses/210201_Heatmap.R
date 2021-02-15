@@ -12,7 +12,7 @@ library(Matrix)
 library(gdata)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/210129_TET2_mutations")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/5_TET2_mutations")
 
 # Functions & colors
 source("../201007_FunctionsGeneral.R")
@@ -20,8 +20,8 @@ popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", 
 mycol.ch <- popcol.df$hex
 names(mycol.ch) <- rownames(popcol.df)
 
-# Load Seurat object, extract metadata
-seu <- readRDS("../210123_BPDCN712_Diagnosis/BPDCN712_Seurat.rds")
+# Load Seurat object
+seu <- readRDS("../4_Patient_10/BPDCN712_Seurat.rds")
 
 # TET2 mutated / wild-type transcript calls
 xvseq.ls <- list(`TET2.S792*` = read_tsv("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/PCRanalysis/200108_BPDCN712/TET2.2340/TET2.2340.FilteredCells.txt"), `TET2.Q1034*` =  read_tsv("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/PCRanalysis/200108_BPDCN712/TET2.3078/TET2.3078.FilteredCells.txt"), `TET2.R1216*` = read_tsv("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/PCRanalysis/200108_BPDCN712/TET2.3626/TET2.3626.FilteredCells.txt"), `TET2.H1380Y` = read_tsv("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/PCRanalysis/200108_BPDCN712/TET2.4104/TET2.4104.FilteredCells.txt"))
@@ -30,7 +30,7 @@ xvseq.tib <- bind_rows(xvseq.ls, .id = "mutation") %>% mutate(cell = str_c(BC, "
     filter(cell %in% colnames(seu))
 
 # Add columns of which clone the cells belong to
-positive_cells.tib <- read_tsv("../210123_BPDCN712_Diagnosis/210204_positive_cells.txt")
+positive_cells.tib <- read_tsv("../4_Patient_10/210204_positive_cells.txt")
 xvseq.tib <- xvseq.tib %>% left_join(select(positive_cells.tib, cell, clone), by = "cell")
 write_tsv(xvseq.tib, file = "xvseq.txt")
 
