@@ -2,13 +2,13 @@ The scripts in this folder were used for downstream analysis of the combined scR
 
 #### 1. Cell line mixing clustering and cleanup
 The same cells, a mixture of K562 and BT142, were analyzed using Seq-Well S^3 and 10X 3' v3 scRNA-seq protocols. These scripts were used to cluster and remove contaminated cells with decontX.\
-200915_TenX_CellLineMix.R\
-201101_SW_CellLineMix.R
+200915_TenX_CellLineMix_decontX.R\
+201101_SW_CellLineMix_decontX.R
 
 #### 2. Cell line mixing variants
 These scripts were used to classify cells as either K562 or BT142 based on mitochondrial variants, and to compare this to classification based on RNA-seq.\
-201101_SW_CellLineMix.R\
-201129_TenX_CellLineMix.R
+201101_SW_CellLineMix_variants.R\
+201129_TenX_CellLineMix_variants.R
 
 These scripts were used to identify clonal structure in K562 cells of both cell line mixing experiments.\
 201119_SW_K562_clones.R\
