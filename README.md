@@ -8,34 +8,36 @@ A collection of scripts for the analysis of MAESTER data. This outline (also Sup
 
 
 ## 1 Pre-processing
-Filter for cell barcodes (CBs) and generate fastq files with CB and unique molecular identifiers (UMIs) from the Read 1 fastq in the read ID of the Read 2 fastq.\
+Process sequencing reads and perform quality controls.
+
+Filter for cell barcodes (CBs) and generate fastq files with CB and unique molecular identifiers (UMIs) from the Read 1 fastq in the read ID of the Read 2 fastq:
 [assembleFastq.PvG210215.R](1_Pre-processing/assembleFastq.PvG210215.R)
 
-After alignment, take the bam file and add the CB and UMI from the read ID as bam tags.\
+After alignment, take the bam file and add the CB and UMI from the read ID as bam tags:\
 [Tag_CB_UMI.PvG191004.sh](1_Pre-processing/Tag_CB_UMI.PvG191004.sh)
 
-Process IronThrone-GoT summary tables by doing additional QC and generating tables of wild-type/mutant cells.\
+Process IronThrone-GoT summary tables by doing additional QC and generating tables of wild-type/mutant cells:\
 [201116_GoT_QC.R](1_Pre-processing/201116_GoT_QC.R)
 
-Take MAEGATK output and plot coverage along the mitochondrial genome.\
+Take MAEGATK output and plot coverage along the mitochondrial genome:\
 [210124_MT_coverage.R](1_Pre-processing/210124_MT_coverage.R)
 
 
 
 ## 2 Downstream analyses
-The scripts in this folder were used for downstream analysis of the combined scRNA-seq, MAESTER and GoT data.
+These scripts were used for downstream analysis of the combined scRNA-seq, MAESTER and GoT data.
 
 #### 1. Cell line mixing clustering and cleanup
-The same cells, a mixture of K562 and BT142, were analyzed using Seq-Well S^3 and 10X 3' v3 scRNA-seq protocols. These scripts were used to cluster and remove contaminated cells with decontX.\
+The same cells, a mixture of K562 and BT142, were analyzed using Seq-Well S^3 and 10X 3' v3 scRNA-seq protocols. These scripts were used to cluster and remove contaminated cells with decontX:\
 [200915_TenX_CellLineMix_decontX.R](2_Downstream_analyses/200915_TenX_CellLineMix_decontX.R)
 [201101_SW_CellLineMix_decontX.R](2_Downstream_analyses/201101_SW_CellLineMix_decontX.R)
 
 #### 2. Cell line mixing variants
-These scripts were used to classify cells as either K562 or BT142 based on mitochondrial variants, and to compare this to classification based on RNA-seq.\
+These scripts were used to classify cells as either K562 or BT142 based on mitochondrial variants, and to compare this to classification based on RNA-seq:\
 [201101_SW_CellLineMix_variants.R](2_Downstream_analyses/201101_SW_CellLineMix_variants.R)
 [201129_TenX_CellLineMix_variants.R](2_Downstream_analyses/201129_TenX_CellLineMix_variants.R)
 
-These scripts were used to identify clonal structure in K562 cells of both cell line mixing experiments.\
+These scripts were used to identify clonal structure in K562 cells of both cell line mixing experiments:\
 [201119_SW_K562_clones.R](2_Downstream_analyses/201119_SW_K562_clones.R)
 [201203_TenX_K562_clones.R](2_Downstream_analyses/201203_TenX_K562_clones.R)
 
