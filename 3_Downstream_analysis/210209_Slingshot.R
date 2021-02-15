@@ -94,7 +94,6 @@ seu@meta.data <- metadata.tib %>% data.frame(row.names = "cell")
 
 # Plot density across trajectory
 pdf("210209_2_Density.pdf")
-plot(
 metadata.tib %>%
     ggplot(aes(x = Pseudotime)) +
     geom_density(aes(color = clone)) +
@@ -105,7 +104,6 @@ metadata.tib %>%
     scale_x_continuous(breaks = c(0, 2.5, 5)) +
     theme_classic()+
     theme(aspect.ratio = 0.75)
-)
 dev.off()
 
 
