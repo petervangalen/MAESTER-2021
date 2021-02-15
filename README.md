@@ -6,9 +6,10 @@ A collection of scripts for the analysis of MAESTER data. This outline (also Sup
 ![outline](Figure_S5_pipelines.png)
 
 
-## 1_Pre-processing
+
+## 1 Pre-processing
 Filter for cell barcodes (CBs) and generate fastq files with CB and unique molecular identifiers (UMIs) from the Read 1 fastq in the read ID of the Read 2 fastq.\
-`assembleFastq.PvG210215.R`
+(1_Pre-processing/assembleFastq.PvG210215.R/assembleFastq.PvG210215.R)
 
 After alignment, take the bam file and add the CB and UMI from the read ID as bam tags.\
 `Tag_CB_UMI.PvG191004.sh`
@@ -20,7 +21,8 @@ Take MAEGATK output and plot coverage along the mitochondrial genome.\
 `210124_MT_coverage.R`
 
 
-## 2_Downstream_analysis
+
+## 2 Downstream analysis
 The scripts in this folder were used for downstream analysis of the combined scRNA-seq, MAESTER and GoT data.
 
 #### 1. Cell line mixing clustering and cleanup
