@@ -42,7 +42,7 @@ These scripts were used to identify clonal structure in K562 cells of both cell 
 [201203_TenX_K562_clones.R](2_Downstream_analyses/201203_TenX_K562_clones.R)
 
 #### 3. Patient 10 Diagnosis
-These scripts were used to analyze cells from the uninvolved bone marrow of Patient 10 (aka BPDCN712) when he was diagnosed with BPDCN. This includes UMAP visualization, identification of informative variants, generating a heatmap of variant allele frequencies, and assessing cell type proportions:\
+These scripts were used to analyze cells from the uninvolved bone marrow of Patient 10 (aka BPDCN712) when he was diagnosed with skin-only BPDCN. This includes UMAP visualization, identification of informative variants, generating a heatmap of variant allele frequencies, and assessing cell type proportions:\
 [210123_BPDCN712_UMAP.R](2_Downstream_analyses/210123_BPDCN712_UMAP.R)\
 [210124_Variants_Of_Interest.R](2_Downstream_analyses/210124_Variants_Of_Interest.R)\
 [210204_LineageBias.R](2_Downstream_analyses/210204_LineageBias.R)
