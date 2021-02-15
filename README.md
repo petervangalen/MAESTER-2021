@@ -27,12 +27,12 @@ Take MAEGATK output and plot coverage along the mitochondrial genome:
 ## 2 Downstream analyses
 These scripts were used for downstream analysis of the combined scRNA-seq, MAESTER and GoT data.
 
-#### 1. Cell line mixing clustering and cleanup
+#### 1. Cell line mixing: clustering and cleanup
 The same cells, a mixture of K562 and BT142, were analyzed using Seq-Well S^3 and 10X 3' v3 scRNA-seq protocols. These scripts were used to cluster and remove contaminated cells with decontX:\
 [200915_TenX_CellLineMix_decontX.R](2_Downstream_analyses/200915_TenX_CellLineMix_decontX.R)\
 [201101_SW_CellLineMix_decontX.R](2_Downstream_analyses/201101_SW_CellLineMix_decontX.R)
 
-#### 2. Cell line mixing variants
+#### 2. Cell line mixing: variants
 These scripts were used to classify cells as either K562 or BT142 based on mitochondrial variants, and to compare this to classification based on RNA-seq:\
 [201101_SW_CellLineMix_variants.R](2_Downstream_analyses/201101_SW_CellLineMix_variants.R)\
 [201129_TenX_CellLineMix_variants.R](2_Downstream_analyses/201129_TenX_CellLineMix_variants.R)
@@ -42,7 +42,7 @@ These scripts were used to identify clonal structure in K562 cells of both cell 
 [201203_TenX_K562_clones.R](2_Downstream_analyses/201203_TenX_K562_clones.R)
 
 #### 3. Patient 10 Diagnosis
-These scripts were used to visualize UMAPs, identify informative variants, generate a heatmap of variant allele frequencies, and assess cell type proportions in cells from the uninvolved bone marrow from Patient 10 when he was diagnosed with BPDCN:\
+These scripts were used to analyze cells from the uninvolved bone marrow of Patient 10 (aka BPDCN712) when he was diagnosed with BPDCN. This includes UMAP visualization, identification of informative variants, generating a heatmap of variant allele frequencies, and assessing cell type proportions:\
 [210123_BPDCN712_UMAP.R](2_Downstream_analyses/210123_BPDCN712_UMAP.R)\
 [210124_Variants_Of_Interest.R](2_Downstream_analyses/210124_Variants_Of_Interest.R)\
 [210204_LineageBias.R](2_Downstream_analyses/210204_LineageBias.R)
