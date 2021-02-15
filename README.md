@@ -9,7 +9,7 @@ A collection of scripts for the analysis of MAESTER data. This outline (also Sup
 
 ## 1 Pre-processing
 Filter for cell barcodes (CBs) and generate fastq files with CB and unique molecular identifiers (UMIs) from the Read 1 fastq in the read ID of the Read 2 fastq.\
-(1_Pre-processing/assembleFastq.PvG210215.R/assembleFastq.PvG210215.R)
+[assembleFastq.PvG210215.R](1_Pre-processing/assembleFastq.PvG210215.R/assembleFastq.PvG210215.R)
 
 After alignment, take the bam file and add the CB and UMI from the read ID as bam tags.\
 `Tag_CB_UMI.PvG191004.sh`
