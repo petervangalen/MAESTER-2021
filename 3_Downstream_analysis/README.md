@@ -21,7 +21,7 @@ These scripts were used to visualize UMAPs, identify informative variants, gener
 210204_LineageBias.R
 
 #### 4. TET2 mutations
-This script was used to quantify transcripts with TET2 mutations, that were detected by Genotyping-of-Transcriptomes, in clones that were detected by MAESTER.\
+This script was used to quantify transcripts with TET2 mutations, that were detected by Genotyping of Transcriptomes, in clones that were detected by MAESTER.\
 210201_Heatmap.R
 
 #### 5. Cytotoxic T Lymphocyte correlation
