@@ -20,7 +20,7 @@ Process IronThrone-GoT summary tables by doing additional QC and generating tabl
 [201116_GoT_QC.R](1_Pre-processing/201116_GoT_QC.R)
 
 Take MAEGATK output and plot coverage along the mitochondrial genome:
-[210124_MT_coverage.R](1_Pre-processing/210124_MT_coverage.R)
+[210125_MT_coverage.R](1_Pre-processing/210125_MT_coverage.R)
 
 
 
