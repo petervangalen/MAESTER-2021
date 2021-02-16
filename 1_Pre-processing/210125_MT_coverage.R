@@ -1,49 +1,34 @@
-# Peter van Galen, 201028
-# Plot coverage of chrM from maegtk data
+# Peter van Galen, 210125
+# Plot coverage of chrM from maegatk data object
 
-options(max.print = 500)
 options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
-library(data.table)
-library(Seurat)
 library(Matrix)
 library(ggforce)
 library(SummarizedExperiment)
 library(ggbeeswarm)
+#library(data.table)
+#library(Seurat)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/200917_MT_Coverage")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/1_MT_Coverage")
 
-# More functions
-source("../201007_FunctionsGeneral.R")
+# More functions (available on https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
 
+# Choose one
+experiment.name <- "SW_CellLineMix"
+experiment.name <- "TenX_CellLineMix_Combined"
+experiment.name <- "TenX_BPDCN712"
 
-#===============================================
-# Plot coverage
-#===============================================
+# Load locally saved maegtk data.
+# This data is available from https://vangalenlab.bwh.harvard.edu/maester-2021/
+# Note that these are lists of two maegatk objects (one for scRNA-seq coverage alone, one for scRNA-seq+MAESTER coverage)
+se.ls <- readRDS(file = paste0(experiment.name, "_mr3_maegatk.rds"))
 
-project.names <- c("SW_CellLineMix", "TenX_CellLineMix_Combined", "TenX_BPDCN712")
-
-for (project.name in project.names) {
-#project.name <- "SW_CellLineMix"
-#project.name <- "SW_AML160419A"
-#project.name <- "SW_AML170329"
-#project.name <- "TenX_CellLineMix"
-#project.name <- "TenX_CellLineMix_Combined"
-#project.name <- "TenX_BPDCN712"
-#project.name <- "TenX_BPDCN712R"
-
-for (mr in c(1,3)) {
-#mr <- 1
-#mr <- 3
-    
-# Load locally saved maegtk data
-se.ls <- readRDS(file = paste0(project.name, "_mr", mr, "_maegatk.rds"))
-#lapply(se.ls, dim)
-
-pdf(file = paste0(project.name, "_mr", mr, ".pdf"))
+pdf(file = paste0(experiment.name, ".pdf"))
 
 #### Plot mean coverage for top 500 cells
 # Use same cells for RNAseq and Maester data
@@ -117,7 +102,6 @@ ggplot(top.tib) +
     theme(aspect.ratio = 2)
 )
 dev.off()
-}
-}
+
 
 
