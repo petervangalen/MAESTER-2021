@@ -23,7 +23,7 @@ experiment.name <- "SW_CellLineMix"
 experiment.name <- "TenX_CellLineMix_Combined"
 experiment.name <- "TenX_BPDCN712"
 
-# Load locally saved maegtk data.
+# Load locally saved maegatk data.
 # This data is available from https://vangalenlab.bwh.harvard.edu/maester-2021/
 # Note that these are lists of two maegatk objects (one for scRNA-seq coverage alone, one for scRNA-seq+MAESTER coverage)
 se.ls <- readRDS(file = paste0(experiment.name, "_mr3_maegatk.rds"))
