@@ -1,5 +1,5 @@
 # Daniel Ssozi, 201116
-# Goal: import the summary table from GoT software & do quality controls (ReadThreshold) & change format for follow-up analyses
+# Goal: import the summary table from IronThrone-GoT software, perform QC (ReadThreshold) and save cells for follow-up analyses
 # Note, this script only works with R version >= 3.6
 
 options(stringsAsFactors = FALSE)
@@ -8,23 +8,18 @@ library(data.table)
 
 rm(list=ls())
 
-# Set working directory
-#setwd("/Volumes/broad_vangalenlab/ssozi/GoT/") # if running locally
-#setwd("/broad/vangalenlab/ssozi/GoT/") # if running on the server
-#setwd("/Users/dz855/Dropbox (Partners HealthCare)/Single-cell_BPDCN/AnalysisDaniel/201116_BPDCN_BPDCNR") # if running on the server
 # Functions
 cutf <- function(x, f=1, d="/") sapply(strsplit(x, d), function(i) paste(i[f], collapse=d))
 
 # Adjustable parameters. Examples are commented out.
 dir.ch <- commandArgs(trailingOnly=TRUE)[1]
 summtable <- commandArgs(trailingOnly=TRUE)[2]
-aml.ch <- commandArgs(trailingOnly=TRUE)[3]
+sample.ch <- commandArgs(trailingOnly=TRUE)[3]
 gene.name <-  commandArgs(trailingOnly=TRUE)[4]
-
+# Example values:
 #dir.ch <- "201109_BPDCN712_BPDCN712R/ZNF750.1562/"
-#summtable <- "/Volumes/broad_vangalenlab/ssozi/GoT/201109_BPDCN712_BPDCN712R/ZNF750.1562/ZNF750.1562.summTable.txt" # if running locally
-#summtable <- "201109_BPDCN712_BPDCN712R/ZNF750.1562/ZNF750.1562.summTable.txt" # if running on the server
-#aml.ch <- "BPDCN712"
+#summtable <- "201109_BPDCN712_BPDCN712R/ZNF750.1562/ZNF750.1562.summTable.txt"
+#sample.ch <- "BPDCN712"
 #gene.name <- "ZNF750"
 
 ReadThreshold <- 3
@@ -94,7 +89,7 @@ max.reads <- max(summtable.UMI.wt.df$reads, summtable.UMI.mut.df$reads)
 pdf(file = paste0(dir.ch, gene.name, ".QC.pdf"), width = 12, height = 12)
 par(mar=c(4,4,4,4), pty = "s", par(mfrow=c(2,2)))
 
-plot(NA, xlab = "Transcripts", ylab = "Reads", log = "y", xlim=c(1, max.transcripts), ylim=c(1, max.reads), main = paste0("Reads per transcript in ", aml.ch))
+plot(NA, xlab = "Transcripts", ylab = "Reads", log = "y", xlim=c(1, max.transcripts), ylim=c(1, max.reads), main = paste0("Reads per transcript in ", sample.ch))
 abline(h=ReadThreshold, lty=2)
 lines(sort(summtable.UMI.wt.df$reads, decreasing = T), col="black")
 lines(sort(summtable.UMI.mut.df$reads, decreasing = T), col="red")
