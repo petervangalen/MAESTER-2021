@@ -6,8 +6,6 @@ options(stringsAsFactors = FALSE)
 
 library(data.table)
 
-sessionInfo()
-
 rm(list=ls())
 
 # Set working directory

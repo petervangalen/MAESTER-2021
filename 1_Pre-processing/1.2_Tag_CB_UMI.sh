@@ -3,18 +3,16 @@
 # Peter van Galen, 191004
 # Move cell barcode (CB) and unique molecular identifier (UMI) from read identifier to sam tags.
 # Resulting bam file will have tags for cell barcode (CB) and UMI (UB) as per 10X convention, https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/bam
-# These tags are required to run MAEGATK software
+# These tags are required to run maegatk software
 
 # Example execution:
-#cd /broad/vangalenlab/vangalen/SW_pipeline/4_star
-#qsub -N OCIAML3-10X -l h_rt=4:00:00,h_vmem=16g -j y -b y -cwd /broad/vangalenlab/vangalen/packages.sh /broad/vangalenlab/vangalen/SW_pipeline/scripts/SWto10X.PvG190524.sh /broad/vangalenlab/vangalen/SW_pipeline/4_star/190606.190418.OCIAML3.star/190606.190418.OCIAML3_Aligned.toTranscriptome.out.bam
+# Tag_CB_UMI.PvG191004.sh <bam>
 
-source /broad/software/scripts/useuse
-reuse -q Samtools
+use -q Samtools
 
 # First variable is bam file to convert
 INPUT=$1
-# Second variable is bam file to write
+# Second variable is bam file to write (automatically named)
 OUTPUT="$(echo "${INPUT/bam/10x.bam}")"
 
 echo "Converting $INPUT into $OUTPUT..."

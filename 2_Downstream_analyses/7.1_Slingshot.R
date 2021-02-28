@@ -1,30 +1,29 @@
 # Peter van Galen, 210209
-# Trajectory analysis (myeloid lineage in particular)
+# Trajectory analysis of myeloid lineage
 
 # Prerequisites
 options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
-library(data.table)
 library(Seurat)
 library(slingshot)
 library(SingleCellExperiment)
 library(RColorBrewer)
-library(gdata)
+library(readxl)
 library(ggnewscale)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/210209_Slingshot")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/7_Slingshot")
 
-# Functions & colors
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3, row.names = 1)
+# Functions and colors (available on https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.df <- read_excel("../MAESTER_colors.xlsx")
 mycol.ch <- popcol.df$hex
-names(mycol.ch) <- rownames(popcol.df)
+names(mycol.ch) <- popcol.df$name
 
 # Load Seurat object
-seu <- readRDS("../210123_BPDCN712_Diagnosis/BPDCN712_Seurat.rds")
+seu <- readRDS("../4_CH_sample/BPDCN712_Seurat.rds")
 
 
 #~~~~~~~~~~~~~~~~~~#
@@ -32,14 +31,13 @@ seu <- readRDS("../210123_BPDCN712_Diagnosis/BPDCN712_Seurat.rds")
 #~~~~~~~~~~~~~~~~~~#
 
 # What cells to select?
-#pdf(file = "210209_1_Trajectory_analysis.pdf", width = 5, height = 5)
 seu.subset1 <- subset(seu, subset = CellType %in% c("HSC", "Prog", "ProMono", "Mono", "ncMono"))
 
 # Slingshot
 rm(sling)
 sling <- as.SingleCellExperiment(seu.subset1)
 reducedDim(sling, "umap") <- as.matrix(data.frame(seu.subset1$UMAP_1, seu.subset1$UMAP_2))
-sling <- slingshot(sling, clusterLabels = "CellType", reducedDim = "umap")#, start.clus = "HSC", end.clus = c("ncMono", "cDC", "pDC"))
+sling <- slingshot(sling, clusterLabels = "CellType", reducedDim = "umap")
 
 # Visualize
 par(pty="s")
@@ -62,7 +60,7 @@ metadata.tib <- as_tibble(seu@meta.data, rownames = "cell")
 metadata.tib <- metadata.tib %>% left_join(SlingCurve, by = "cell")
 
 # Add clone info to metadata
-positive_cells.tib <- read_tsv("../210123_BPDCN712_Diagnosis/210204_positive_cells.txt")
+positive_cells.tib <- read_tsv("../4_CH_sample/210204_positive_cells.txt")
 metadata.tib <- metadata.tib %>% mutate(clone = ifelse(cell %in% filter(positive_cells.tib, variant == "2593_G>A")$cell,
                                                        yes = "2593_G>A", no = "Other"))
 
@@ -83,8 +81,9 @@ dev.off()
 
 # Add pseudotime to Seurat meta.data & save
 stopifnot(all(metadata.tib$cell == colnames(seu)))
-seu@meta.data <- metadata.tib %>% data.frame(row.names = "cell")
-# Commented out cause it's a waste of storage space
+
+# Not needed:
+#seu@meta.data <- metadata.tib %>% data.frame(row.names = "cell")
 #saveRDS(seu, file = "BPDCN712_Seurat_with_Pseudotime.rds")
 
 

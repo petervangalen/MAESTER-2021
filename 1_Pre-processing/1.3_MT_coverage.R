@@ -8,14 +8,11 @@ library(tidyverse)
 library(Matrix)
 library(ggforce)
 library(SummarizedExperiment)
-library(ggbeeswarm)
-#library(data.table)
-#library(Seurat)
 
 rm(list=ls())
 setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/1_MT_Coverage")
 
-# More functions (available on https://github.com/vangalenlab/MAESTER-2021)
+# Functions (available at https://github.com/vangalenlab/MAESTER-2021)
 source("../210215_FunctionsGeneral.R")
 
 # Choose one
@@ -24,14 +21,14 @@ experiment.name <- "TenX_CellLineMix_Combined"
 experiment.name <- "TenX_BPDCN712"
 
 # Load locally saved maegatk data.
-# This data is available from https://vangalenlab.bwh.harvard.edu/maester-2021/
+# This data is available at https://vangalenlab.bwh.harvard.edu/maester-2021/
 # Note that these are lists of two maegatk objects (one for scRNA-seq coverage alone, one for scRNA-seq+MAESTER coverage)
 se.ls <- readRDS(file = paste0(experiment.name, "_mr3_maegatk.rds"))
 
 pdf(file = paste0(experiment.name, ".pdf"))
 
 #### Plot mean coverage for top 500 cells
-# Use same cells for RNAseq and Maester data
+# Use same cells for coverage from RNA-seq and Maester
 common.cells <- intersect(colnames(se.ls[[1]]), colnames(se.ls[[2]]))
 se.ls[[1]] <- se.ls[[1]][,common.cells]
 se.ls[[2]] <- se.ls[[2]][,common.cells]
@@ -71,12 +68,20 @@ GenePos.tib <- GenePos.tib %>% arrange(start) %>%
 base.tib <- tibble(base = 1:16569,
                    rnaseq_depth = rowMeans(assays(se.ls[[1]])[["coverage"]]),
                    maester_depth = rowMeans(assays(se.ls[[2]])[["coverage"]]))
+
+# Set y axis parameters
+if (experiment.name == "SW_CellLineMix") {
+    ymax <- 200
+} else if (experiment.name %in% c("TenX_CellLineMix_Combined", experiment.name <- "TenX_BPDCN712")) {
+    ymax <- 1000
+}
+
 print(
 base.tib %>% ggplot() +
     geom_bar(aes(x = base, y = ifelse(maester_depth > 1, yes = maester_depth, no = NA)), stat = "identity", fill = "#64b53b", width = 1) + 
     geom_bar(aes(x = base, y = ifelse(rnaseq_depth > 1, yes = rnaseq_depth, no = NA)), stat = "identity", fill = "#fdcb25", width = 1) +
-    coord_cartesian(ylim = c(1, 1000)) + # previously 200
-    scale_y_continuous(trans = "log10") + #, breaks = c(1, 2, 5, 10, 20, 50, 100, 200)) +
+    coord_cartesian(ylim = c(1, ymax)) +
+    scale_y_continuous(trans = "log10") +
     geom_segment(data = GenePos.tib, aes(x = start, y = ycoord, xend = end, yend = ycoord)) +
     geom_text(data = GenePos.tib, aes(x = mid, y = ycoord-50, label = cutf(Names, d = "\\.", f = 2)), size = 3) +
     ylab("Mean coverage per cell") + xlab("Position along chrM") +
@@ -90,8 +95,8 @@ print(
 ggplot(top.tib) +
     geom_bar(aes(x = key, y = maester_depth), stat = "identity", fill = "#64b53b", width = 1) +
     geom_bar(aes(x = key, y = ifelse(rnaseq_depth > 1, yes = rnaseq_depth, no = NA)), stat = "identity", fill = "#fdcb25", width = 1) +
-    coord_cartesian(ylim = c(1, 1000)) + # previously 200
-    scale_y_continuous(trans = "log10") + #, breaks = c(1, 2, 5, 10, 20, 50, 100, 200)) +
+    coord_cartesian(ylim = c(1, ymax)) +
+    scale_y_continuous(trans = "log10") +
     geom_label(data = data.frame(), aes(x = 2500, y = mean(top.tib$maester_depth), label = round(mean(top.tib$maester_depth), 2)),
                fill = "#64b53b") +
     geom_label(data = data.frame(), aes(x = 2500, y = 2, label = round(mean(top.tib$rnaseq_depth), 2)),

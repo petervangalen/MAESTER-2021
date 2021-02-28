@@ -1,30 +1,27 @@
 # Peter van Galen, 210201
-# Differential gene expression between clones in Patient 10 Diagnosis cells
+# Correlation of cells within (intraclonal) and between (interclonal) CTL clones
 
 # Prerequisites
 options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
-library(data.table)
 library(Seurat)
-library(gdata)
-library(SingleCellExperiment)
-library(RColorBrewer)
+library(readxl)
 library(ComplexHeatmap)
-library(circlize)
+library(circlize) # for colorRamp2
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/210201_CTL_correlation")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/5_CTL_correlation")
 
-# Functions & colors
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3)
-cell_type_colors <- deframe(popcol.df[1:14,1:2])
-clone_colors <- deframe(popcol.df[15:37,1:2])
+# Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.tib <- read_excel("../MAESTER_colors.xlsx")
+mycol.ch <- popcol.tib$hex
+names(mycol.ch) <- popcol.tib$name
 
-# Load Seurat object
-seu <- readRDS("../210123_BPDCN712_Diagnosis/BPDCN712_Seurat.rds")
+# Load Seurat object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
+seu <- readRDS("../4_CH_sample/BPDCN712_Seurat.rds")
 
 # Subset for CTLs & identify variable genes
 CTL.seu <- subset(seu, subset = CellType == "CTL")
@@ -32,29 +29,25 @@ CTL.seu <- FindVariableFeatures(CTL.seu, nfeatures = 100)
 tibble(Variable_features = VariableFeatures(CTL.seu)) %>% write_tsv("VariableFeatures.txt")
 
 # Cell IDs
-positive_cells.tib <- read_tsv(file = "../210123_BPDCN712_Diagnosis/210204_positive_cells.txt")
+positive_cells.tib <- read_tsv(file = "../4_CH_sample/210204_positive_cells.txt")
 positive_cells.tib <- positive_cells.tib %>% filter(!duplicated(cell)) %>% mutate(clone = factor(clone, levels = unique(clone)),
                                                     variant = factor(variant, levels = unique(variant)),
-                                                    CellType = factor(CellType, levels = popcol.df$name[1:14]))
+                                                    CellType = factor(CellType, levels = popcol.tib$name[1:14]))
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#### Heatmap of 1202 x 1202 CTLs ####
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#### Heatmap of 1,044 x 1,044 CTLs ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Make a tibble with CTLs and clones
 clones.sorted <- positive_cells.tib %>% group_by(clone) %>% summarize(n = n()) %>% arrange(desc(n)) %>% .$clone
 CTL.tib <- filter(positive_cells.tib, CellType == "CTL")
 
-# TEST: ORDER BY SIZE
-#clones.sorted <- CTL.tib %>% group_by(clone) %>% summarize(n = n()) %>% arrange(desc(n)) %>% .$clone
-#CTL.tib <- CTL.tib %>% mutate(clone = factor(clone, levels = clones.sorted)) %>% arrange(clone)
-
 # Get expression data of cells in clones
 expr.mat <- as.matrix( GetAssayData(CTL.seu, slot = "data") )
 expr.mat <- expr.mat[VariableFeatures(CTL.seu),CTL.tib$cell]
 
-ha <- HeatmapAnnotation(df = data.frame(dplyr::select(CTL.tib, clone)), col = list(clone = clone_colors))
+ha <- HeatmapAnnotation(df = data.frame(dplyr::select(CTL.tib, clone)), col = list(clone = mycol.ch))
 
 cor.mat <- cor(expr.mat)
 
@@ -76,7 +69,7 @@ dev.off()
 #### Averages ####
 #~~~~~~~~~~~~~~~~#
 
-# Add columns to fill in
+# Prepare columns to fill in
 CTL_clones.tib <- CTL.tib %>% group_by(clone) %>% summarize(n = n()) %>%
     mutate(intra_cor = as.numeric(NA), inter_cor = as.numeric(NA))
 
@@ -111,7 +104,7 @@ CTL_clones.tib %>% filter(n > 10) %>%
     ggplot(aes(x = name, y = Correlation, color = clone, group = clone)) +
     geom_path(size = 1) +
     geom_point(size = 4) +
-    scale_color_manual(values = clone_colors) +
+    scale_color_manual(values = mycol.ch) +
     xlab("") +
     theme_classic() +
     labs(size = 10) +

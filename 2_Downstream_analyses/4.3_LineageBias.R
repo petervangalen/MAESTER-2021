@@ -1,5 +1,5 @@
 # Peter van Galen, 210204
-# Assess lineage bias in Patient 10 diagnosis clones
+# Assess lineage bias in the clonal hematopoiesis sample
 
 
 #~~~~~~~~~~~~~~~~~~~~~#
@@ -10,45 +10,36 @@ options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
-library(data.table)
-library(SummarizedExperiment)
 library(Seurat)
+library(SummarizedExperiment)
 library(Matrix)
 library(ggrastr)
 library(ComplexHeatmap)
-library(gdata)
 library(readxl)
-library(ggrepel)
-#library(circlize)
-#library(GGally) # for ggpairs
-#library(ggforce) # for geom_sina
-#library(ggbeeswarm)
-#library(stringr)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/210123_BPDCN712_Diagnosis")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/4_CH_sample")
 
-# Functions & colors
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3)
-cell_type_colors <- deframe(popcol.df[1:14,1:2])
-clone_colors <- deframe(popcol.df[15:37,1:2])
+# Functions and colors (available on https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.df <- read_excel("../MAESTER_colors.xlsx")
+mycol.ch <- popcol.df$hex
+names(mycol.ch) <- popcol.df$name
 
-### Import data
 # Load Seurat object
 seu <- readRDS("BPDCN712_Seurat.rds")
 
 # Load Maegtk, calculate allele frequencies
 maegatk.rse <- readRDS("BPDCN712_Maegatk.rds")
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
-
+# Check (should be TRUE)
 all(colnames(af.dm) == colnames(seu))
 
 # Extract Seurat metadata
 cells.tib <- as_tibble(seu@meta.data, rownames = "cell")
 
 # Variants of interest
-voi.ch <- read_tsv("210124_Dx_vois.txt")$var
+voi.ch <- read_tsv("210124_vois.txt")$var
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -101,14 +92,14 @@ pdf("210204_1_CellTypeBarplots.pdf")
 
 ggplot(filter(plot.tib, clone != "all_cells"), aes(x = clone, y = `Number of cells`, fill = CellType)) +
     geom_bar(position = "stack", stat = "identity") +
-    scale_fill_manual(values = cell_type_colors) +
+    scale_fill_manual(values = mycol.ch) +
     scale_y_continuous(limits=c(0, 300)) +
     theme_classic() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1), aspect.ratio = 0.7)
 
 ggplot(plot.tib, aes(x = clone, y = `Number of cells`, fill = CellType)) +
     geom_bar(position = "fill", stat = "identity") +
-    scale_fill_manual(values = popcol.df[plot.tib$CellType,"hex"]) +
+    scale_fill_manual(values = mycol.ch) +
     theme_classic() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1), aspect.ratio = 0.7)
 
@@ -164,8 +155,8 @@ cell_type_freq2.tib %>% dplyr::select(CellType, contains(current.clones)) %>%
     coord_radar() +
     geom_line() +
     geom_polygon(alpha = 0.2) +
-    scale_color_manual(values = c(set_names(clone_colors, str_c(names(clone_colors), "_freq")), all_cells_freq = "black")) +
-    scale_fill_manual(values = c(set_names(clone_colors, str_c(names(clone_colors), "_freq")), all_cells_freq = "black")) +
+    scale_color_manual(values = c(set_names(mycol.ch, str_c(names(mycol.ch), "_freq")), all_cells_freq = "black")) +
+    scale_fill_manual(values = c(set_names(mycol.ch, str_c(names(mycol.ch), "_freq")), all_cells_freq = "black")) +
     scale_x_continuous(breaks = 1:15, labels = c(levels(cell_type_freq.tib$CellType), "")) +
     theme_bw() +
     xlab("") +
@@ -184,8 +175,8 @@ cell_type_freq2.tib %>% dplyr::select(CellType, contains(c("all_cells", current.
     coord_radar() +
     geom_line() +
     geom_polygon(alpha = 0.2) +
-    scale_color_manual(values = c(set_names(clone_colors, str_c(names(clone_colors), "_norm")), all_cells_norm = "black")) +
-    scale_fill_manual(values = c(set_names(clone_colors, str_c(names(clone_colors), "_norm")), all_cells_norm = "black")) +
+    scale_color_manual(values = c(set_names(mycol.ch, str_c(names(mycol.ch), "_norm")), all_cells_norm = "black")) +
+    scale_fill_manual(values = c(set_names(mycol.ch, str_c(names(mycol.ch), "_norm")), all_cells_norm = "black")) +
     scale_x_continuous(breaks = 1:15, labels = c(levels(cell_type_freq.tib$CellType), "")) +
     theme_bw() +
     xlab("") +
@@ -195,7 +186,7 @@ cell_type_freq2.tib %>% dplyr::select(CellType, contains(c("all_cells", current.
           axis.ticks.y = element_line(color = "black"))
 dev.off()
 
-
+# In the final figure, only control, 2593G>A and 6243G>A are shown
 
 
 

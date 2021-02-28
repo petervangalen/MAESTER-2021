@@ -1,4 +1,4 @@
-# Peter van Galen, 201129
+# Peter van Galen, 201101
 # Distinguish K562 and BT142 cells in cell line mixing experiments
 
 
@@ -15,26 +15,20 @@ library(Seurat)
 library(data.table)
 library(Matrix)
 library(ComplexHeatmap)
-library(gdata)
+library(readxl)
 library(ggrastr)
-#library(stringr)
-#library(ggforce)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/200922_Cell_line_mixes")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
 rm(list=ls())
 
-# More functions
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3, row.names = 1)
-heatcol.ch <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 4, header = F)$V1
+# Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.df <- read_excel("../MAESTER_colors.xlsx")
+heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
 
-### Import data: choose one
-# For Seq-Well S^3 Cell Line Mix
-#seu <- readRDS("../200915_All_Clustering_Decontx/SW_CellLineMix_Seurat_Keep.rds")
-#se.ls <- readRDS(paste0("../200917_MT_Coverage/SW_CellLineMix_mr3_maegatk.rds"))
-# For 10X 3' v3 Cell Line Mix
-seu <- readRDS("../200915_All_Clustering_Decontx/TenX_CellLineMix_Seurat_Keep.rds")
-se.ls <- readRDS(paste0("../200917_MT_Coverage/TenX_CellLineMix_Combined_mr3_maegatk.rds"))
+# Import data for Seq-Well S^3 Cell Line Mix (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
+seu <- readRDS("../2_Cell_line_mixes_decontX/SW_CellLineMix_Seurat_Keep.rds")
+se.ls <- readRDS("../1_MT_Coverage/SW_CellLineMix_mr3_maegatk.rds")
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -43,10 +37,9 @@ se.ls <- readRDS(paste0("../200917_MT_Coverage/TenX_CellLineMix_Combined_mr3_mae
 
 # Combine information
 names(se.ls)
-common.cells <- intersect(colnames(seu), colnames(maegatk.rse))
+common.cells <- intersect(colnames(seu), colnames(se.ls[[2]]))
 
-# Fraction of scRNA-seq cells captured with Maester (90%):
-# This is surprisingly low: 90.2% of cells
+# Fraction of scRNA-seq cells captured with Maester (99.4%):
 rnaseq_cell_number <- ncol(seu)
 common_cell_number <- length(common.cells)
 common_cell_number / rnaseq_cell_number
@@ -58,15 +51,15 @@ maegatk.rse <- se.ls[[2]][,common.cells]
 # Prepare allele frequency matrix. Rows represents a position along the mitochondrial genome and the three possible disagreements with the reference (except 3107 has four possible disagreements because the reference is N)
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
 
-# Collect cell information
+# Collect cell information 
 cells.tib <- tibble(cell = common.cells,
                     orig.ident = seu$orig.ident,
                     CellType_RNA = seu$CellType,
-                    UMAP_1 = seu@reductions$umap@cell.embeddings[,"UMAP_1"],
-                    UMAP_2 = seu@reductions$umap@cell.embeddings[,"UMAP_2"],
+                    UMAP_1 = seu$UMAP_1,
+                    UMAP_2 = seu$UMAP_2,
                     Mean_Cov = maegatk.rse$depth)
 
-# Make groups of cell ids
+# Make groups of cell IDs
 CellSubsets.ls <- list(unionCells = cells.tib$cell,
                        K562 = filter(cells.tib, CellType_RNA == "K562")$cell,
                        BT142 = filter(cells.tib, CellType_RNA == "BT142")$cell)
@@ -80,13 +73,12 @@ CellSubsets.ls <- list(unionCells = cells.tib$cell,
 
 # Get the mean allele frequency and coverage for every cell subset.
 mean_af.ls <- lapply(CellSubsets.ls, function(x) rowMeans(af.dm[,x]))
-mean_cov.ls <- lapply(CellSubsets.ls, function(x) rowMeans(assays(maegatk.rse)[["coverage"]][,x])[as.numeric(cutf(rownames(af.dm), d = "_"))])
+mean_cov.ls <- lapply(CellSubsets.ls, function(x) rowMeans(assays(se.ls[[2]])[["coverage"]][,x])[as.numeric(cutf(rownames(af.dm), d = "_"))])
 names(mean_af.ls) <- paste0("mean_af.", names(mean_af.ls))
 names(mean_cov.ls) <- paste0("mean_cov.", names(mean_cov.ls))
 
 # Get the quantiles of the VAFs of each variant in each cell subset
 quantiles <- c("q01" = 0.01, "q10" = 0.1, "q50" = 0.5, "q90" = 0.9, "q99" = 0.99)
-# This can take a while.
 start_time <- Sys.time()
 quantiles.ls <- lapply(quantiles, function(x) lapply(CellSubsets.ls, function(y) apply(af.dm[,y], 1, quantile, x) ))
 Sys.time() - start_time
@@ -110,17 +102,21 @@ vars.tib <- as_tibble(do.call(cbind, c(mean_af.ls, mean_cov.ls, unlist(quantiles
 vars.tib <- add_column(vars.tib, quality = qual.num, .before = 2)
 
 # Save for fast loading next time
-write_tsv(vars.tib, "TenX_CellLineMix_Variants1.txt")
-vars.tib <- read_tsv("TenX_CellLineMix_Variants1.txt")
+write_tsv(vars.tib, "SW_CellLineMix_Variants1.txt")
+vars.tib <- read_tsv("SW_CellLineMix_Variants1.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### Detect homoplasmic variants ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-# Variants 20-fold coverage, VAF of <10% in the bottom 10% of cells and VAF of >90% in top 10% of cells.
-# You can make this even more lenient with 20% and 80%, yielding the exact same results.
-voi.ch <- vars.tib %>% filter(mean_cov.unionCells > 20, q10.unionCells < 10, q90.unionCells > 90) %>% .$var
+# Variants 20-fold coverage, VAF of <10% in the bottom 10% of cells and VAF of >90% in top 10% of cells
+voi.ch <- vars.tib %>% filter(mean_cov.unionCells > 20,
+                              quality > 30,
+                              q10.unionCells < 10,
+                              q90.unionCells > 90) %>% .$var
+# Assess transitions vs. transversions
+str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
 
 # Generate matrices with coverage, allele frequency and reference / variant reads
 cov_voi.mat <- assays(maegatk.rse)[["coverage"]][as.numeric(cutf(voi.ch, d = "_")),]
@@ -128,13 +124,12 @@ af_voi.mat <- af.dm[voi.ch,]
 
 ### Plot VAF in each cell, sorted from low to high, illustrating the selection process
 pdf(paste0(seu@project.name, "_1_Sorted_VAFs.pdf"), width = 10, height = 5)
-mycol <- rainbow(length(voi.ch))
 par(mar=c(4,4,2,8), xpd = T)
 plot(NA, xlim = c(0, ncol(af_voi.mat)), ylim = c(0, 100), xlab = "Cells (sorted separately for each variant)", ylab = "Variant Allele Frequency")
 for (n in 1:length(voi.ch)) {
     v <- voi.ch[n]
-    points(as.numeric(sort(af_voi.mat[v,])), pch = 16, col = mycol[n])
-    text(x = 1.1*ncol(af_voi.mat), y = 110-6*n, label = v, col = mycol[n], pos = 4)
+    points(as.numeric(sort(af_voi.mat[v,])), pch = 16, col = popcol.df$hex[n])
+    text(x = 1.1*ncol(af_voi.mat), y = 110-10*n, label = v, col = popcol.df$hex[n], pos = 4)
 }
 dev.off()
 
@@ -198,26 +193,25 @@ combined_supporting_calls.df <- do.call(cbind, supporting_calls.ls)
 
 # Add up supporting reads: is it a K562 or BT142 cell?
 supporting_calls.tib <- tibble(cell = rownames(combined_supporting_calls.df),
-    K562_supporting_calls = rowSums(combined_supporting_calls.df[,c("709_G>A.mut", "1888_G>A.mut", "6249_G>A.mut", "8697_G>A.mut", "11719_G>A.mut", "15452_C>A.mut", "1420_T>C.mut", "2141_T>C.mut", "4216_T>C.mut", "6524_T>C.mut", "9117_T>C.mut", "11251_A>G.mut", "11764_A>G.mut", "11812_A>G.mut", "15607_A>G.mut", "7990_C>T.ref", "12741_C>T.mut")
-]),
-    BT142_supporting_calls = rowSums(combined_supporting_calls.df[,c("709_G>A.ref", "1888_G>A.ref", "6249_G>A.ref", "8697_G>A.ref", "11719_G>A.ref", "15452_C>A.ref", "1420_T>C.ref", "2141_T>C.ref", "4216_T>C.ref", "6524_T>C.ref", "9117_T>C.ref", "11251_A>G.ref", "11764_A>G.ref", "11812_A>G.ref", "15607_A>G.ref", "7990_C>T.mut", "12741_C>T.ref")
-]))
-
+    K562_supporting_calls = rowSums(combined_supporting_calls.df[,c("709_G>A.mut", "1888_G>A.mut", "1420_T>C.mut", "2141_T>C.mut", "9117_T>C.mut", "7990_C>T.ref")]),
+    BT142_supporting_calls = rowSums(combined_supporting_calls.df[,c("709_G>A.ref", "1888_G>A.ref", "1420_T>C.ref", "2141_T>C.ref", "9117_T>C.ref", "7990_C>T.mut")]))
+           
 # Combine information
 cells.tib <- left_join(cells.tib, supporting_calls.tib, by = "cell")
 
-# Label cells as K562, BT142, contaminated or NoCoverage based on the number of supporting reads
+# Label cells as donor, host, or contaminated based on the number of supporting reads
 #cells.tib %>% mutate(reads = K562_supporting_calls + BT142_supporting_calls) %>% arrange(reads)
 cells.tib <- cells.tib %>% mutate(CellType_MT = ifelse(K562_supporting_calls + BT142_supporting_calls < 30, yes = "NoCoverage", no =
     ifelse(K562_supporting_calls > 3 & K562_supporting_calls > 10*BT142_supporting_calls, yes = "K562", no =
-    ifelse(BT142_supporting_calls > 3 & BT142_supporting_calls > 2*K562_supporting_calls, yes = "BT142", no = "Contaminated")))) %>%
+    ifelse(BT142_supporting_calls > 3 & BT142_supporting_calls > 10*K562_supporting_calls, yes = "BT142", no = "Contaminated")))) %>%
     mutate(CellType_MT = factor(CellType_MT, levels = c("Contaminated", "BT142", "K562", "NoCoverage")))
 
 # Plot supporting reads
 pdf(paste0(seu@project.name, "_3_SupportingReads.pdf"))
 cells.tib %>% arrange(CellType_MT) %>%
     ggplot(aes(x = K562_supporting_calls, y = BT142_supporting_calls, color = CellType_MT)) +
-    geom_point_rast(alpha = 0.8) +
+    coord_cartesian(xlim = c(0,4000)) +
+    geom_point_rast(alpha = 1, size = 2) +
     scale_color_manual(values = c("#E17973", "#8E87F5", "#7BF581", NA)) +
     theme_classic() +
     theme(aspect.ratio = 1)
@@ -255,7 +249,7 @@ cells.tib %>% filter(! CellType_MT %in% c("Contaminated", "NoCoverage")) %>%
     ggtitle("Classification from mitochondrial variants")
 )
 print(
-cells.tib %>% mutate(CellType_RNA = gsub("BT142_Cycling", "BT142", CellType_RNA)) %>%
+cells.tib %>%
     ggplot(aes(x = UMAP_1, y = UMAP_2, color = CellType_RNA)) +
     geom_point_rast() +
     scale_color_manual(values = c("#575757", "#ff9233")) +
@@ -277,7 +271,7 @@ cells.ch <- cells.tib %>% filter(CellType_MT %in% c("K562", "BT142")) %>%
     .$cell
 
 # Create heatmap annotation (RNA-seq clusters)
-ha <- HeatmapAnnotation(CellType_RNA = gsub("BT142_Cycling", "BT142", cells.tib$CellType_RNA[cells.ch]),
+ha <- HeatmapAnnotation(CellType_RNA = cells.tib$CellType_RNA[cells.ch],
                         col = list(CellType_RNA = c("K562" = "#7BF581", "BT142" = "#8E87F5")))
 
 # Visualize: clustered VAFs
@@ -297,6 +291,7 @@ hm1 <- Heatmap(af_voi.mat[,cells.ch],
 
 # Correlate cells based on informative variants
 cor.mat <- cor(af_voi.mat[,cells.ch])
+cor.mat[is.na(cor.mat)] <- 1
 
 hm2 <- Heatmap(cor.mat,
                col=c("#FCFCFC","#FFEDB0","#FFDF5F","#FEC510","#FA8E24","#F14C2B","#DA2828","#BE2222","#A31D1D"),
@@ -316,12 +311,19 @@ print(hm2)
 dev.off()
 
 
-#~~~~~~~~~~~~#
-#### Save ####
-#~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~#
+#### Metrics & save ####
+#~~~~~~~~~~~~~~~~~~~~~~#
+
+# Agreement between CellType_RNA and CellType_MT
+cells.tib$CellType_RNA %>% table(useNA= "always")
+cells.tib$CellType_MT %>% table(useNA = "always")
+cells.tib %>% filter(CellType_MT == "K562") %>% .$CellType_RNA %>% table(useNA = "always")
+cells.tib %>% filter(CellType_MT == "BT142") %>% .$CellType_RNA %>% table(useNA = "always")
+# "Of the cells that were classified by mitochondrial variants, 2,129/2,130 were concordant with mRNA clusters for Seq-Well"
 
 # Remove unneccessary information
 cells.tib <- cells.tib[,!str_detect(colnames(cells.tib), str_replace_all(str_c(c(voi.ch, "supporting"), collapse = "|"), ">", "."))]
-write_rds(cells.tib, "TenX_CellLineMix_Cells.rds")
+write_rds(cells.tib, "SW_CellLineMix_Cells.rds")
 
 

@@ -1,5 +1,5 @@
 # Peter van Galen, 210124
-# Find a biologically interesting message in BPDCN712 sample
+# Assess clonal relationships in the clonal hematopoiesis sample
 
 
 #~~~~~~~~~~~~~~~~~~~~~#
@@ -16,44 +16,36 @@ library(Seurat)
 library(Matrix)
 library(ggrastr)
 library(ComplexHeatmap)
-library(gdata)
 library(readxl)
 library(ggrepel)
-library(circlize)
-library(gridExtra)
-#library(GGally) # for ggpairs
-#library(ggforce) # for geom_sina
-#library(ggbeeswarm)
-#library(stringr)
+library(circlize) # for colorRamp2
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/210123_BPDCN712_Diagnosis")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/4_CH_sample")
 
-# Functions & colors
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3, row.names = 1)
+# Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.df <- read_excel("../MAESTER_colors.xlsx")
 mycol.ch <- popcol.df$hex
-names(mycol.ch) <- rownames(popcol.df)
-heatcol.ch <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 4, header = F)$V1
+names(mycol.ch) <- popcol.df$name
+heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
 
-### Import data
-# Load Seurat object
+# Load Seurat object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
 seu <- readRDS("BPDCN712_Seurat.rds")
 
-# Load Maegtk, calculate allele frequencies
+# Load Maegtk, calculate allele frequencies (https://vangalenlab.bwh.harvard.edu/maester-2021/))
 maegatk.rse <- readRDS("BPDCN712_Maegatk.rds")
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
-
+# Check (should be TRUE)
 all(colnames(af.dm) == colnames(seu))
-
-# Extract Seurat metadata
-cells.tib <- as_tibble(seu@meta.data, rownames = "cell")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #### Which cell types to compare ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
+# Extract Seurat metadata
+cells.tib <- as_tibble(seu@meta.data, rownames = "cell")
 cells.tib$CellType %>% table
 
 CellSubsets.ls <- list(unionCells = cells.tib$cell,
@@ -63,7 +55,7 @@ CellSubsets.ls <- list(unionCells = cells.tib$cell,
                        Lymphoid = filter(cells.tib, CellType %in% c("T", "CTL"))$cell,
                        B = filter(cells.tib, CellType %in% c("B", "Plasma"))$cell,
                        NK = filter(cells.tib, CellType == "NK")$cell,
-                       CTC = filter(cells.tib, BPDCN_Tumor > 0.75)$cell)
+                       CTC = filter(cells.tib, BPDCN_Tumor_score > 0.75)$cell)
 lengths(CellSubsets.ls)
 
 
@@ -115,7 +107,7 @@ vars.tib <- read_tsv("210124_all_variants.txt")
 #~~~~~~~~~~~~~~~~~~#
 
 # Get mean allele frequence in K562 and BT142 cells
-backgroundvars.tib <- read_tsv("../200922_Cell_line_mixes/TenX_CellLineMix_Variants1.txt")
+backgroundvars.tib <- read_tsv("../3_Cell_line_mixes_variants/TenX_CellLineMix_Variants1.txt")
 backgroundvars.tib <- backgroundvars.tib %>% select(var, mean_cov.unionCells, mean_af.K562, mean_af.BT142)
 vars.tib <- vars.tib %>% left_join(select(backgroundvars.tib, var, mean_af.K562, mean_af.BT142), by = "var")
 
@@ -199,14 +191,14 @@ dev.off()
 #### Look into variants ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-### Small expansions with high VAF at diagnosis (see also 201015_Variants_Of_Interest.R)
-save_name <- "210124_Dx"
+# Parameters to select small clones with high VAF
 voi.ch <- vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist.var) %>% 
     filter(q90.unionCells == 0, q999.unionCells > 50) %>% .$var
 # This one is background noise
 voi.ch <- voi.ch[!grepl("1583_A>G", voi.ch)]
-# Transitions
+# Assess transitions vs. transversions
 str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
+
 # Compare VAF between lymphoid and myeloid
 vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist.var) %>% arrange(var %in% voi.ch) %>%
     mutate(difference = abs(mean_af.Myeloid-mean_af.Lymphoid)) %>%
@@ -215,30 +207,16 @@ vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist
     geom_point() +
     geom_text_repel(show.legend = F) +
     coord_cartesian(xlim = c(0,15), ylim = c(0,15)) +
-    labs(color = "Condition") +
+    labs(color = "Variant of interest") +
+    theme_classic() +
     theme(aspect.ratio = 1)
-
-### Variants that might distinguish CTCs from non-malignant bone marrow cells
-save_name <- "210124_CTCs"
-voi.ch <- vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist.var) %>%
-    filter(mean_af.CTC > 0.5, mean_af.unionCells < 0.1) %>% .$var
-# Transitions
-str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
-vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist.var) %>% arrange(var %in% voi.ch) %>%
-    ggplot(aes(x = mean_af.unionCells, y = mean_af.CTC, color = var %in% voi.ch, label = ifelse(var %in% voi.ch, var, ""))) +
-    geom_point() +
-    geom_label_repel(show.legend = F) +
-    coord_cartesian(xlim = c(0,5), ylim = c(0,5)) +
-    labs(color = "Condition") +
-    theme(aspect.ratio = 1)
-# As you can see in the plots below, these "CTC" variants are mostly likely pure garbage. Each of them only occurs in one pDC and also in bunch of other cells, i.e., they could just be rare false positives.
 
 
 #~~~~~~~~~~~~~~~~~~#
 #### Plot UMAPs ####
 #~~~~~~~~~~~~~~~~~~#
 
-pdf(str_c(save_name, "_2_UMAPs.pdf"))
+pdf(str_c("210124_2_UMAPs.pdf"))
 for (v in voi.ch) {
     message(v)
     
@@ -259,7 +237,7 @@ for (v in voi.ch) {
     print(
         cells.tib %>% arrange(af_voi) %>% mutate(Rank_sorted_cells = row_number()) %>%
             ggplot(aes(x = Rank_sorted_cells, y = af_voi, color = CellType)) +
-            scale_color_manual(values = popcol.df[levels(cells.tib$CellType), "hex"]) +
+            scale_color_manual(values = mycol.ch) +
             geom_point_rast() + 
             ylab("Variant allele frequency") +
             theme(aspect.ratio = 0.5, plot.title = element_text(hjust=0.5)) +
@@ -270,7 +248,7 @@ for (v in voi.ch) {
 }
 dev.off()
 
-# See below UMAP plots for supplementary data
+# See below for UMAP plots for supplementary data
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -287,9 +265,10 @@ af_subset.mat[,1:2]
 cor.mat <- cor(t(af_subset.mat))
 var.clust <- hclust(as.dist(1-cor.mat))
 
-# Correlation heatmap
-plot(var.clust$height, ylim = c(0, max(var.clust$height))); abline(h = 0.5, col = "red")
-ngroups <- sum(var.clust$height > 0.5) + 1 # not sure how consistently this performs but it works for small_dx_clones
+# Assess how correlated variants are and group them together
+plot(var.clust$height, ylim = c(0, max(var.clust$height)))
+# Make 23 groups of variants, i.e. 20 alone and 3 groups of two variants. This is determined empirically.
+ngroups <- 23
 
 hm1 <- Heatmap(cor.mat,
                col = colorRamp2(c(-1,0,1), c("blue", "#DDDDDD", "red")),
@@ -307,7 +286,7 @@ hm1 <- Heatmap(cor.mat,
                width = unit(100, "mm"),
                height = unit(100, "mm"),
                column_title = ngroups)
-pdf(str_c(save_name, "_3_Correlation.pdf"))
+pdf(str_c("210124_3_Correlation.pdf"))
 print(hm1)
 dev.off()
 
@@ -329,26 +308,10 @@ voi.ch <- unlist(str_split(Groups.tib$vars, ", "))
 #### VAF heatmap ####
 #~~~~~~~~~~~~~~~~~~~#
 
-### Customize column order
 # Sort for all variants from the correlation matrix
 plot_order.mat <- af_subset.mat[unlist(str_split(Groups.tib$vars, ", ")),]
-# OPTION 1 (better for K562 clones)
-# Only use VAFs of >2% for sorting
-#plot_order.mat[plot_order.mat < 2 ] <- 0
-# Order from high to low
-#for (x in rev(strsplit(Groups.tib$vars, ", "))) {
-#    if (length(x) == 1) { # for individual variants, order by VAF
-#        plot_order.mat <- plot_order.mat[,order(-plot_order.mat[x,])]
-#    } else { # for variants in a Group, use Pearson clustering for ordering
-#        tmp.mat <- plot_order.mat[x,! colSums(plot_order.mat[x,]) == 0]
-#        tmp.cor <- cor(tmp.mat, method = "pearson")
-#        tmp.cor[is.na(tmp.cor)] <- 1
-#        tmp.hclust <- hclust(as.dist(1-tmp.cor))
-#        tmp_order.mat <- plot_order.mat[,tmp.hclust$labels[tmp.hclust$order]]
-#        plot_order.mat <- cbind(tmp_order.mat, plot_order.mat[,!colnames(plot_order.mat) %in% colnames(tmp_order.mat)])
-#    }
-#}
-# OPTION 2 (better for Dx clones)
+
+# Customize column order. This is different from the strategy for K562 subclones.
 for (x in rev(strsplit(Groups.tib$vars, ", "))) {
     if (length(x) == 1) {
         plot_order.mat <- plot_order.mat[,order(-plot_order.mat[x,])]
@@ -357,27 +320,20 @@ for (x in rev(strsplit(Groups.tib$vars, ", "))) {
     }
 }
 
-# Generate a matrix to plot, while maintaining sorting order, adding back large variants, and restoring VAFs of 0-2%.
-plot.mat <- af_subset.mat[rownames(plot_order.mat), colnames(plot_order.mat)]
-
 # Add annotation bars
-anno.tib <- tibble(cell = colnames(plot.mat)) %>% left_join(cells.tib, by = "cell") %>%
+anno.tib <- tibble(cell = colnames(plot_order.mat)) %>% left_join(cells.tib, by = "cell") %>%
     select(CellType, ASXL1.G642fs, `TET2.S792*`, `TET2.Q1034*`, `TET2.R1216*`, TET2.H1380Y)
-colors.ch <- popcol.df$hex
-names(colors.ch) <- rownames(popcol.df)
 ha <- HeatmapAnnotation(df = data.frame(anno.tib),
-                        col = list(CellType = colors.ch,
+                        col = list(CellType = mycol.ch,
                                    ASXL1.G642fs = c(wildtype = "#FFFFFF", mutant = "#000000", `no call` = "#a0a0a0"),
                                    TET2.S792. = c(wildtype = "#FFFFFF", mutant = "#000000", `no call` = "#a0a0a0"),
                                    TET2.Q1034. = c(wildtype = "#FFFFFF", mutant = "#000000", `no call` = "#a0a0a0"),
                                    TET2.R1216. = c(wildtype = "#FFFFFF", mutant = "#000000", `no call` = "#a0a0a0"),
                                    TET2.H1380Y = c(wildtype = "#FFFFFF", mutant = "#000000", `no call` = "#a0a0a0")))
-# Take out top 1% of values
-#plot.mat[plot.mat>quantile(plot.mat, 0.99)] <- quantile(plot.mat, 0.99)
 
 # Plot
-hm2 <- Heatmap(plot.mat,
-               col = colorRamp2(seq(0, round(max(plot.mat)), length.out = 9),
+hm2 <- Heatmap(plot_order.mat,
+               col = colorRamp2(seq(0, round(max(plot_order.mat)), length.out = 9),
                                 c("#FCFCFC","#FFEDB0","#FFDF5F","#FEC510","#FA8E24","#F14C2B","#DA2828","#BE2222","#A31D1D")),
                show_row_names = T,
                show_column_names = F,
@@ -392,12 +348,12 @@ hm2 <- Heatmap(plot.mat,
                #width = unit(100, "mm"),
                #height = unit(100, "mm"),
                use_raster = T)
-pdf(str_c(save_name, "_4_Heatmap.pdf"), width = 12, height = 6)
+pdf(str_c("210124_4_Heatmap.pdf"), width = 12, height = 6)
 print(hm2)
 dev.off()
 
 # Save variants
-write_tsv(tibble(var = voi.ch), file = str_c(save_name, "_vois.txt"))
+write_tsv(tibble(var = voi.ch), file = str_c("210124_vois.txt"))
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -427,6 +383,105 @@ for (v in setdiff(voi.ch, c("683_G>A", "2593_G>A"))) {
     cells.tib$cov_voi <- NULL
 }
 
-pdf(file = str_c(save_name, "_2_UMAPs_combined.pdf"), height = (11-2)*1.5, width = (8.5-2)*1.5)
+pdf(file = str_c("210124_2_UMAPs_combined.pdf"), height = (11-2)*1.5, width = (8.5-2)*1.5)
 grid.arrange(grobs = p, ncol = 4)
 dev.off()
+
+
+#~~~~~~~~~~~~~~~~~~#
+#### More plots ####
+#~~~~~~~~~~~~~~~~~~#
+
+# Mean depth in each cell type
+mean_depth.tib <- tibble(cell = colnames(maegatk.rse),
+                         depth = maegatk.rse@colData$depth)
+pdf("210124_5_Coverage_per_CellType.pdf")
+mean_depth.tib %>% left_join(select(cells.tib, cell, CellType), by = "cell") %>%
+    group_by(CellType) %>% summarize(mean_depth = mean(depth)) %>%
+    ggplot(aes(x = CellType, y = mean_depth)) +
+    geom_bar(stat = "identity") +
+    ylab("Mean depth") +
+    xlab("") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+dev.off()
+
+
+# This can be assessed for the different variants as follows
+subset_cov.dgm <- assays(maegatk.rse)[["coverage"]][as.numeric(cutf(voi.ch, d = "_")),]
+rownames(subset_cov.dgm) <- voi.ch
+cov.tib <- as_tibble(t(as.matrix(subset_cov.dgm)), rownames = "cell") %>%
+    left_join(select(cells.tib, cell, CellType), by = "cell") %>% relocate(CellType, .before = 2)
+pdf("210124_6_Coverage_per_Variant.pdf", width = 12)
+cov.tib %>% pivot_longer(cols = -c(cell, CellType), names_to = "variant", values_to = "cov") %>%
+    group_by(variant, CellType) %>% summarize(mean_cov = mean(cov)) %>%
+    mutate(variant = factor(variant, levels = voi.ch)) %>%
+    ggplot(aes(x = CellType, y = mean_cov)) +
+    geom_bar(stat = "identity") +
+    facet_wrap(~variant, scales = "free_y") +
+    ylab("Mean coverage") +
+    xlab("") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+dev.off()
+
+
+# Similarly, this information can be extracted from vars.tib for each cell subset
+vars.tib %>% select(var, contains("mean_cov")) %>% .[match(voi.ch, vars.tib$var),] %>%
+    mutate(var = factor(var, levels = var)) %>%
+    pivot_longer(cols = -var, names_to = "CellType", values_to = "mean_coverage") %>%
+    mutate(CellType = gsub("mean_cov.", "", CellType)) %>%
+    filter(! CellType %in% c("unionCells", "CTC")) %>%
+    mutate(CellType = factor(CellType, levels = unique(CellType))) %>%
+    ggplot(aes(x = CellType, y = mean_coverage)) +
+    geom_bar(stat = "identity") +
+    facet_wrap(~var, scales = "free_y") +
+    ylab("Mean coverage") +
+    xlab("") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
+
+
+### Plot of variant locations
+voi_order.ch <- voi.ch[order(as.numeric(cutf(voi.ch, d = "_")))]
+voi_along_chrM.num <- rep(0, 16569)
+voi_along_chrM.num[as.numeric(cutf(voi_order.ch, d = "_"))] <- 1
+labels.ch <- rep("", 16569)
+labels.ch[as.numeric(cutf(voi_order.ch, d = "_"))] <- voi_order.ch
+
+# Colors
+varcol.ch <- mycol.ch[sapply(voi_order.ch, function(x) grep(x, names(mycol.ch)))]
+data.frame(names(varcol.ch), voi_order.ch)
+names(varcol.ch) <- voi_order.ch
+barcol.ch <- varcol.ch[match(labels.ch, names(varcol.ch))]
+
+# Genes
+GenePos.tib <- tibble(Names = c("MT.ATP6", "MT.ATP8", "MT.COX1", "MT.COX2", "MT.COX3", "MT.CYTB", "MT.ND1", "MT.ND2", "MT.ND3",
+                                "MT.ND4", "MT.ND4L", "MT.ND5", "MT.ND6", "MT.RNR1", "MT.RNR2"),
+                      start = c(8527, 8366, 5904, 7586, 9207, 14747, 3307, 4470, 10059, 10760, 10470, 12337, 14149, 648, 1671), 
+                      end = c(9207, 8572, 7445, 8269, 9990, 15887, 4262, 5511, 10404, 12137, 10766, 14148, 14673, 1601, 3229))
+GenePos.tib <- GenePos.tib %>% arrange(start) %>%
+    mutate(mid = round((end-start)/2+start,0), ycoord = rep(c(-0.05,-0.07), length.out = 15))
+
+pdf("210124_7_Variant_locations.pdf", height = 3, width = 10)
+par(xpd=T)
+barplot(voi_along_chrM.num, border = barcol.ch,
+        yaxt = "n", xlab = "position", cex.names = 0, space = 0, ylim = c(0,1.5))
+axis(side = 1, at = c(0, 16569))
+points(x = as.numeric(cutf(voi_order.ch, d = "_")), y = rep(1,length(voi_order.ch)),
+       pch = 16, col = varcol.ch)
+
+for (n in 1:nrow(GenePos.tib)) {
+    lines(x = c(GenePos.tib$start[n], GenePos.tib$end[n]), y = c(GenePos.tib$ycoord[n], GenePos.tib$ycoord[n]), col = "blue")
+    text(x = GenePos.tib$mid[n], y = GenePos.tib$ycoord[n],
+         labels = gsub("MT.", "", GenePos.tib$Names[n]), pos = 1, col = "blue", cex = 0.7)
+}
+
+textcol.ch <- na.omit(barcol.ch)
+attributes(textcol.ch) <- NULL
+text(x = as.numeric(cutf(voi_order.ch, d = "_")), y = 1.1, labels = voi_order.ch, pos = 4, srt = 45,
+     col = varcol.ch, cex = 0.7)
+dev.off()
+
+
+

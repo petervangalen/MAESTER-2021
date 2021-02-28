@@ -1,6 +1,6 @@
 # Peter van Galen, 201203
 # Detect subclones in K562 cells from the 10X cell line mixing experiment
-# This is based on 201119_SW_K562_clones.R
+# This is similar to 201119_SW_K562_clones.R
 
 
 #~~~~~~~~~~~~~~~~~~~~~#
@@ -16,56 +16,95 @@ library(Seurat)
 library(data.table)
 library(Matrix)
 library(ComplexHeatmap)
-library(gdata)
+library(readxl)
 library(ggrastr)
-library(ggforce)
-#library(stringr)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/200922_Cell_line_mixes")
+setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
 rm(list=ls())
 
-# More functions
-source("../201007_FunctionsGeneral.R")
-popcol.df <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3, row.names = 1)
-heatcol.ch <- read.xls("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 4, header = F)$V1
+# Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
+source("../210215_FunctionsGeneral.R")
+popcol.df <- read_excel("../MAESTER_colors.xlsx")
+heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
+
+# Import MAEGATK data for 10X Cell Line Mix (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
+se.ls <- readRDS("../1_MT_Coverage/TenX_CellLineMix_Combined_mr3_maegatk.rds")
+
+# This tibble contains UMAP coordinates and cell type classifications
+# Available at https://github.com/vangalenlab/MAESTER-2021; see 201129_TenX_CellLineMix_variants.R)
+cells.tib <- read_rds("TenX_CellLineMix_Cells.rds")
 
     
 #~~~~~~~~~~~~~~~~~~~~#
 #### Prepare data ####
 #~~~~~~~~~~~~~~~~~~~~#
 
-# This tibble contains UMAP coordinates and cell type classifications (see 201101_SW_CellLineMix.R)
-cells.tib <- read_rds("TenX_CellLineMix_Cells.rds")
-
-# This tibble contains information about variants
-vars.tib <- read_tsv("TenX_CellLineMix_Variants1.txt")
-
-# Additional data can be accessed through the Maegatk output and Seurat object:
-se.ls <- readRDS(paste0("../200917_MT_Coverage/TenX_CellLineMix_Combined_mr3_maegatk.rds"))
+# Put maegatk object in the same order as cells.tib
 maegatk.rse <- se.ls[[2]][,cells.tib$cell]
-#seu <- readRDS("../200915_All_Clustering_Decontx/TenX_CellLineMix_Seurat_Keep.rds")
 
 # Prepare allele frequency matrix
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
 
 # Group cell IDs by cell type classification. Use the cell type classification from maegatk, not RNA-seq.
-cells.tib <- cells.tib %>% mutate(CellType_RNA = gsub("BT142_Cycling", "BT142", CellType_RNA))
-cells.tib$CellType_RNA %>% table
-cells.tib$CellType_MT %>% table
 table( as.character(cells.tib$CellType_RNA) == as.character(cells.tib$CellType_MT) )
+CellSubsets.ls <- list(unionCells = cells.tib$cell,
+                       K562 = filter(cells.tib, CellType_MT == "K562")$cell,
+                       BT142 = filter(cells.tib, CellType_MT == "BT142")$cell)
 
 # Check coverage between cell types
-pdf("TenX_Coverage_between_CellTypes.pdf")
 cells.tib %>% mutate(coverage = maegatk.rse$depth) %>%
     ggplot(aes(x = CellType_RNA, y = coverage)) +
     geom_violin() +
     theme(aspect.ratio = 1)
-cells.tib %>% mutate(coverage = maegatk.rse$depth) %>% arrange(-coverage) %>% mutate(key = row_number()) %>%
-    ggplot(aes(x = key, y = coverage, color = CellType_RNA)) +
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#### Collect variant information ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+# This section takes a while; consider skipping to read_tsv at the end.
+
+# Get the mean allele frequency and coverage for every cell subset.
+mean_af.ls <- lapply(CellSubsets.ls, function(x) rowMeans(af.dm[,x]))
+mean_cov.ls <- lapply(CellSubsets.ls, function(x) rowMeans(assays(se.ls[[2]])[["coverage"]][,x])[as.numeric(cutf(rownames(af.dm), d = "_"))])
+names(mean_af.ls) <- paste0("mean_af.", names(mean_af.ls))
+names(mean_cov.ls) <- paste0("mean_cov.", names(mean_cov.ls))
+
+# Get the quantiles of the VAFs of each variant in each cell subset. This takes 2.5 minutes.
+quantiles <- c("q01" = 0.01, "q10" = 0.1, "q50" = 0.5, "q90" = 0.9, "q99" = 0.99)
+start_time <- Sys.time()
+quantiles.ls <- lapply(quantiles, function(x) lapply(CellSubsets.ls, function(y) apply(af.dm[,y], 1, quantile, x) ))
+Sys.time() - start_time
+
+# Get the mean quality for each variant. This takes an hour.
+start_time <- Sys.time()
+qual.num <- sapply(rownames(af.dm), function(x) {
+    pos <- as.numeric( cutf(x, d = "_") )
+    message(pos)
+    mut <- cutf(x, d = ">", f = 2)
+    # Only use cells in which the base was sequenced. Use reverse only because that's how we amplify transcripts.
+    covered <- assays(se.ls[[2]])[[str_c(mut, "_counts_rev")]][pos,] > 0
+    # Get the mean quality for this call
+    qual <- mean( assays(se.ls[[2]])[[str_c(mut, "_qual_rev")]][pos, covered] )
+    return(qual)
+})
+Sys.time() - start_time
+
+# Collect all information in a tibble
+vars.tib <- as_tibble(do.call(cbind, c(mean_af.ls, mean_cov.ls, unlist(quantiles.ls, recursive = F))), rownames = "var")
+vars.tib <- add_column(vars.tib, quality = qual.num, .before = 2)
+
+# Plot quality metrics
+vars.tib %>% arrange(quality) %>% mutate(key = row_number()) %>%
+    mutate(mut = cutf(var, d = ">", f = 2)) %>%
+    ggplot(aes(x = key, y = quality, color = mut)) +
     geom_point() +
-    xlab("Rank sorted cells")
-mean( sort(maegatk.rse$depth, decreasing = T)[1:500] )
-dev.off()
+    xlab(label = "Rank sorted variant") +
+    theme(aspect.ratio = 0.5)
+
+# Save for fast loading next time
+write_tsv(vars.tib, "TenX_CellLineMix_Variants2.txt")
+vars.tib <- read_tsv("TenX_CellLineMix_Variants2.txt")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -74,13 +113,14 @@ dev.off()
 
 ### Get the most interesting subclonal variants
 voi.ch <- vars.tib %>%
-    filter(mean_cov.K562 > 100, q01.K562 < 1, q99.K562 > 2,
+    filter(mean_cov.unionCells > 100, q01.K562 < 1, q99.K562 > 2,
            mean_af.K562 > (5*mean_af.BT142),
-           quality >= 30) %>%
+           quality > 30) %>%
     .$var
-# Replace 9117_T>C, which comes up because it has no coverage in some cells, with another homoplasmic variant (2141_T>C), that has better coverage (see also 201101_SW_CellLineMix.R)
-#voi.ch <- str_replace_all(voi.ch, "9117_T>C", "2141_T>C")
-#str_view(voi.ch, "G>A|A>G|C>T|T>C")
+# Assess transitions vs. transversions
+str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
+# Add 2141_T>C as a positive control / homoplasmic variant
+voi.ch <- c(voi.ch, "2141_T>C")
 #filter(vars.tib, var %in% voi.ch) %>% view
 
 # Order from large to small clones.
@@ -138,17 +178,22 @@ dev.off()
 #### Heatmaps ####
 #~~~~~~~~~~~~~~~~#
 
-### Prepare matrix of variants of interest in K562 cells, capped at VAF 15%
-af_subset.mat <- af.dm[voi.ch,filter(cells.tib, CellType_MT == "K562")$cell]
+### Prepare matrix of variants of interest in K562 cells with decent coverage
+cells.tib$n_covered <- cells.tib %>% select(contains("cov_")) %>% apply(1, function(x) sum(x > 3))
+af_subset.mat <- af.dm[voi.ch,filter(cells.tib, CellType_MT == "K562", n_covered == length(voi.ch))$cell]
+# Cap at 15% VAF
 af_subset.mat[af_subset.mat > 15] <- 15
 
-### Variant correlation & cluster
-cor.mat <- cor(t(af_subset.mat))
+### Variant correlation.
+var_cor.mat <- af_subset.mat[! rownames(af_subset.mat) == "2141_T>C",]
+cor.mat <- cor(t(var_cor.mat))
+# Cluster
 var.clust <- hclust(as.dist(1-cor.mat))
 
-#pdf("10x_CellLineMix_TestGroups.pdf")
-#for (ngroups in 16:20) {
-ngroups <- 20
+# Assess how correlated variants are and group them together
+plot(var.clust$height, ylim = c(0, max(var.clust$height)))
+# Make 16 groups of variants. This is determined empirically.
+ngroups <- 16
 
 # Correlation heatmap
 hm1 <- Heatmap(cor.mat,
@@ -171,21 +216,18 @@ dev.off()
 # Determine variants in each group as displayed by Heatmap package:
 Groups.tib <- tibble(var = names(cutree(var.clust, k = ngroups)), Cut = cutree(var.clust, k = ngroups))[var.clust$order,]
 Groups.tib <- Groups.tib %>% mutate(Group = match(Cut, unique(Cut)))
-Groups.ls <- split(Groups.tib$var, Groups.tib$Group)
-# Order from Groups with most cells to groups least cells
-GroupSizes.ls <- lapply(Groups.ls, function(x) sum(af.dm[x,] > 1))
-Groups.ls <- Groups.ls[rev(order(unlist(GroupSizes.ls)))]
-# And then order from Groups with many to few variants
-Groups.ls <- Groups.ls[order(-lengths(Groups.ls))]
+Groups.tib <- Groups.tib %>% group_by(Group) %>% summarize(vars = toString(var), nvar = n())
+GroupIDs.ls <- lapply(str_split(Groups.tib$vars, ", "), function(x) c(sapply(x, function(y) colnames(af.dm[,af.dm[y,] > 1]))))
+Groups.tib$ncells <- unlist(lapply(GroupIDs.ls, function(x) length(unique(unlist(x)))))
+# Order from Groups with most cells to groups with least cells, then from Groups with many to few variants.
+Groups.tib <- Groups.tib %>% arrange(desc(ncells), desc(nvar))
 
 ### Customize column order
-plot_order.mat <- af_subset.mat#[,order(-af_subset.mat["8213_G>A",])]
-# Then, sort for all variants from the correlation matrix
-plot_order.mat <- plot_order.mat[unlist(Groups.ls),]
+plot_order.mat <- af_subset.mat[unlist(str_split(Groups.tib$vars, ", ")),]
 # Only use VAFs of >2% for sorting
 plot_order.mat[plot_order.mat < 2 ] <- 0
-# Order from high to low
-for (x in rev(lapply(Groups.ls, function(x) match(x, unlist(Groups.ls))))) {
+# Order columns
+for (x in rev(strsplit(Groups.tib$vars, ", "))) {
     if (length(x) == 1) { # for individual variants, order by VAF
         plot_order.mat <- plot_order.mat[,order(-plot_order.mat[x,])]
     } else { # for variants in a Group, use Pearson clustering for ordering
@@ -196,13 +238,17 @@ for (x in rev(lapply(Groups.ls, function(x) match(x, unlist(Groups.ls))))) {
         tmp_order.mat <- plot_order.mat[,tmp.hclust$labels[tmp.hclust$order]]
         plot_order.mat <- cbind(tmp_order.mat, plot_order.mat[,!colnames(plot_order.mat) %in% colnames(tmp_order.mat)])
     }
-}
+} 
 
-# Generate a matrix to plot, while maintaining sorting order, adding back large variants, and restoring VAFs of 0-2%.
-plot.mat <- af_subset.mat[rownames(plot_order.mat), colnames(plot_order.mat)]
+# Generate a matrix to plot, while maintaining sorting order, adding back 2141_T>C, and restoring VAFs of 0-2%.
+plot.mat <- af_subset.mat[c("2141_T>C", rownames(plot_order.mat)), colnames(plot_order.mat)]
+
+# Remove uninformative cells
+plot_reduced.mat <- plot.mat[,colSums(plot.mat[! rownames(plot.mat) == "2141_T>C",]) > 2]
+dim(plot.mat); dim(plot_reduced.mat)
 
 # Plot
-hm2 <- Heatmap(plot.mat,
+hm2 <- Heatmap(plot_reduced.mat,
                col = c("#FCFCFC","#FFEDB0","#FFDF5F","#FEC510","#FA8E24","#F14C2B","#DA2828","#BE2222","#A31D1D"),
                show_row_names = T,
                show_column_names = F,
@@ -217,6 +263,5 @@ hm2 <- Heatmap(plot.mat,
                use_raster = T)
 pdf(paste0("TenX_K562_clones_4_Heatmap.pdf"))
 print(hm2)
-#}
 dev.off()
 
