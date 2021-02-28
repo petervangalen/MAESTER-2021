@@ -3,7 +3,7 @@
 ## Outline
 A collection of scripts for the analysis of MAESTER data. This outline (also Supplemental Figure 5 in the paper) shows how scripts are used.
 
-![outline](Figure_S5_pipelines.png)
+![outline](0_Auxiliary_files/Figure_S5_pipelines.png)
 
 
 
