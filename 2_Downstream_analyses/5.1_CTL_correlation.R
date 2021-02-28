@@ -83,7 +83,7 @@ for (i in CTL_clones.tib$clone) {
     other.cells <- setdiff(colnames(CTL.seu), current.cells)
     #other.cells <- CTL.tib %>% filter(clone != i) %>% .$cell
     
-    # Calculate gene expression correlation of every intraclonal CTL with every other CTL of the same clone
+    # Calculate gene expression correlation of every CTL with every other CTL of the same clone
     cor_intra.ls <- lapply(current.cells, function(x) { cor(expr.mat[,x], expr.mat[,setdiff(current.cells, x)]) } )
     names(cor_intra.ls) <- current.cells
 
