@@ -45,7 +45,7 @@ clones.tib <- xvseq.tib %>% group_by(clone, mutation) %>% summarize(cell_number 
 # Plot mutation heatmap
 pdf("mutation_heatmap.pdf", height = 4, width = 12)
 clones.tib %>%
-    ggplot(aes(x = clone, y = mutation, fill = fraction, label = cell_number)) + # change label to total_transcripts for the number of *transcripts*
+    ggplot(aes(x = clone, y = mutation, fill = fraction, label = cell_number)) + # change label to total_transcripts for the number of transcripts
     geom_tile() +
     geom_text() + 
     scale_y_discrete(limits = rev(c("TET2.S792X", "TET2.Q1034X", "TET2.R1216X", "TET2.H1380Y"))) +
@@ -68,7 +68,7 @@ combined_clones.tib <- xvseq.tib %>% na.omit %>%
 
 pdf("mutation_heatmap2.pdf", width = 4, height = 4)
 combined_clones.tib %>%
-    ggplot(aes(x = clone_summary, y = mutation, fill = fraction, label = cell_number)) +
+    ggplot(aes(x = clone_summary, y = mutation, fill = fraction, label = cell_number)) + # change label to total_transcripts for the number of transcripts
     geom_tile() +
     geom_text() + 
     scale_y_discrete(limits = rev(c("TET2.S792X", "TET2.Q1034X", "TET2.R1216X", "TET2.H1380Y"))) +
