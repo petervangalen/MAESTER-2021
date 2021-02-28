@@ -81,7 +81,7 @@ combined_clones.tib %>%
 dev.off()
 
 #17+10+10+21+2+3+3+15+11+10+21=123 transcripts
-#16+10+10+17+2+2+2+12+7+10+16=104 cells
+#16+10+10+17+2+2+2+12+7+10+16=104 cells (of which 70 are unique)
 
 
 
