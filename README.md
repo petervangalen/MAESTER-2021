@@ -38,7 +38,7 @@ These scripts were used to classify cells as either K562 or BT142 based on mitoc
 
 These scripts were used to identify clonal structure in K562 cells of both cell line mixing experiments:\
 [3.2_SW_K562_clones.R](2_Downstream_analyses/3.2_SW_K562_clones.R)\
-[3.3_TenX_K562_clones.R](2_Downstream_analyses/3.3_TenX_K562_clones.R)
+[3.4_TenX_K562_clones.R](2_Downstream_analyses/3.4_TenX_K562_clones.R)
 
 #### 4. Clonal hematopoiesis sample
 These scripts were used to analyze cells from the clonal hematopoiesis bone marrow aspirate. This entails UMAP visualization, identification of informative variants, generating a heatmap of variant allele frequencies, and assessing cell type proportions (including the radar plot):\

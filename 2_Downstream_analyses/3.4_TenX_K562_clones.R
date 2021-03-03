@@ -1,6 +1,6 @@
-# Peter van Galen, 201203
+# Peter van Galen, 200130
 # Detect subclones in K562 cells from the 10X cell line mixing experiment
-# This is similar to 201119_SW_K562_clones.R
+# This is similar to 3.2_SW_K562_clones.R
 
 
 #~~~~~~~~~~~~~~~~~~~~~#
