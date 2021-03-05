@@ -31,7 +31,7 @@ names(mycol.ch) <- popcol.df$name
 #### Subset for common cells ####
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
-# Load Seurat object from the clonal hematopoiesis bone marrow aspirate (available at https://vangalenlab.bwh.harvard.edu/single-cell_bpdcn/)
+# Load Seurat object from the clonal hematopoiesis bone marrow aspirate (available at https://vangalenlab.bwh.harvard.edu/resources/single-cell_bpdcn/)
 seu <- readRDS("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/201214_Seurat_GoT/BPDCN712_Seurat_Genotyped.rds")
 
 # Load maegatk object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
