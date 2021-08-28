@@ -46,7 +46,7 @@ Slingshot was used to analyze the myeloid differentiation trajectory including t
 #### 8. Glioblastoma
 We performed Seq-Well scRNA-seq and MAESTER on two regions of a glioblastoma tumor and PBMCs from the same patient. The scripts ultimately leading to the identification of a variant that informs the origin of tumor-infiltrating myeloid cells are here.
 
-#### 7. K562 bulk ATAC-seq
+#### 9. K562 bulk ATAC-seq
 We performed bulk ATAC-sequencing to validate variants that were detected by MAESTER. Here we correlate the VAFs between both methods.
 
 
