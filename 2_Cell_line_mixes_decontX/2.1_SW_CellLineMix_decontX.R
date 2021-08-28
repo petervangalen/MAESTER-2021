@@ -1,5 +1,5 @@
-# Peter van Galen, 210220
-# Process 10X 3' v3 Cell line mixing experiment data
+# Peter van Galen, 210219
+# Process Seq-Well S^3 cell line mixing experiment data
 # Goal is to save Seurat object with high-quality cells
 
 #~~~~~~~~~~~~~~~~~~~~~~#
@@ -18,7 +18,7 @@ library(Seurat)
 library(data.table)
 library(ggrastr)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/2_Cell_line_mixes_decontX")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/2_Cell_line_mixes_decontX")
 
 rm(list=ls())
 
@@ -32,12 +32,12 @@ popcol.df <- read_excel("../MAESTER_colors.xlsx")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Load expression data (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
-load("../ExpressionData/TenX_CellLineMix_expr.RData", verbose = T)
-seu <- CreateSeuratObject(counts = CM.dgm, project = "TenX_CellLineMix")
-seu$Well <- cutf(colnames(seu), d = "-", f = 2)
+load("../ExpressionData/SW_CellLineMix_expr.RData", verbose = T)
+seu <- CreateSeuratObject(counts = CM.df, project = "SW_CellLineMix")
+seu$Array <- cutf(colnames(CM.df), d = "\\.|_", f = 2)
 
 # Generate cell IDs that will match MAEGATK output
-seu$cellMerge <- paste0(cutf(colnames(seu), d = "-"), "-1")
+seu$cellMerge <- paste0(cutf(colnames(seu), d = "_", f = 2), "-1")
 
 # Only keep cells with a cellMerge id that occurs once
 cell <- tibble(cell = seu$cellMerge) %>% group_by(cell) %>% filter(n()==1) %>% .$cell
@@ -46,7 +46,7 @@ seu <- seu[, seu$cellMerge %in% cell]
 # Make the column names match MAEGATK & save
 seu <- RenameCells(seu, new.names = as.character(seu$cellMerge))
 seu$cellMerge <- NULL
-write_tsv(data.frame(colnames(seu)), "TenX_CellLineMix.QualityCells.txt", col_names = F)
+write_tsv(tibble(sort(colnames(seu))), "SW_CellLineMix.QualityCells.txt", col_names = F)
 
 # Exclude RPS and RPL genes
 rp.ch <- rownames(seu)[grepl("^RPS|^RPL", rownames(seu))]
@@ -64,9 +64,9 @@ seu <- ScaleData(seu, features = rownames(seu))
 
 # Linear dimension reduction
 seu <- RunPCA(seu, features = VariableFeatures(object = seu))
-DimPlot(seu, reduction = "pca", group.by = "Well") +
+DimPlot(seu, reduction = "pca", group.by = "Array") +
     theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) +
-    ggtitle("PCA colored by well")
+    ggtitle("PCA colored by array")
 DimHeatmap(seu, dims = 1:9, cells = 500, balanced = TRUE)
 
 # Cluster. Recommended resolution 0.4-1.2 for 3,000 cells, but we're doing broad clustering because we know there are two cell types.
@@ -83,7 +83,7 @@ FeaturePlot(seu, features = "PTPRZ1", slot = "data", reduction = "umap") + theme
 FeaturePlot(seu, features = "MKI67", slot = "data", reduction = "umap") + theme(aspect.ratio = 1)
 
 # Give clusters intuitive names and save as CellType metadata
-seu <- RenameIdents(object = seu, "0" = "BT142", "1" = "K562")
+seu <- RenameIdents(object = seu, "0" = "K562", "1" = "BT142")
 seu$CellType <- factor(seu@active.ident, levels = c("BT142", "K562"))
 DimPlot(seu, reduction = "umap") + theme(aspect.ratio = 1)
 
@@ -93,14 +93,14 @@ seu$UMAP_2 <- seu@reductions$umap@cell.embeddings[,2]
 
 # Markers of gene expression using area under the curve
 MarkerGenes.roc <- FindAllMarkers(seu, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, test.use = "roc")
-write_tsv(MarkerGenes.roc, file = "TenX_CellLineMix_ROC_Markers.txt")
-MarkerGenes.roc <- read_tsv("TenX_CellLineMix_ROC_Markers.txt")
+write_tsv(MarkerGenes.roc, file = "SW_CellLineMix_ROC_Markers.txt")
+MarkerGenes.roc <- read_tsv("SW_CellLineMix_ROC_Markers.txt")
 
 # List of top 10 genes for each cluster
 Top10Genes.ls <- lapply(split(MarkerGenes.roc, f = MarkerGenes.roc$cluster), function(x) x$gene[1:10])
 
 # Add metadata and plot
-pdf("TenX_CellLineMix_1_Clusters_Scores.pdf", width = 6, height = 6)
+pdf("SW_CellLineMix_1_Clusters_Scores.pdf", width = 6, height = 6)
 
 DimPlot(seu, reduction = "umap") + theme(aspect.ratio = 1)
 
@@ -129,7 +129,7 @@ sce <- decontX(x = sce, assayName = "counts") #, z = seu$CellType)
 seu$decontX <- sce$decontX_contamination
 
 # Visualize decontX results
-pdf("TenX_CellLineMix_2_DecontX.pdf", width = 6, height = 6)
+pdf("SW_CellLineMix_2_DecontX.pdf", width = 6, height = 6)
 
 # Color by contamination
 cont_cutoff <- 0.05
@@ -159,10 +159,10 @@ dev.off()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Plot evaluation of parameters to exclude cells
-pdf("TenX_CellLineMix_3_Cleanup.pdf", width = 6, height = 6)
+pdf("SW_CellLineMix_3_Cleanup.pdf", width = 6, height = 6)
 
 # Cluster signature scores grouped by cluster
-score_cutoff <- tibble(name = c("BT142_Score", "K562_Score"), cutoff = c(-1,0.2))
+score_cutoff <- tibble(name = c("BT142_Score", "K562_Score"), cutoff = c(-0.5,0.2))
 seu@meta.data %>% pivot_longer(cols = paste0(names(Top10Genes.ls), "_Score")) %>%
     ggplot(aes(x = CellType, y = value, fill = CellType)) +
     geom_violin() +
@@ -197,7 +197,7 @@ DimPlot(seu, group.by = "Keep", cols = c("grey", "red"), order = "FALSE") +
 
 dev.off()
 
-# Exclude 112 / 2778 cells (4.03%) that did not pass; 2666 left
+# Exclude 218 / 2525 cells (8.63%) that did not pass; 2307 left
 table(seu$Keep)
 seu_red <- subset(seu, subset = Keep == T)
 seu_red$CellType %>% table
@@ -221,8 +221,8 @@ saveRDS(seu_red, file = paste0(seu_red@project.name, "_Seurat_Keep.rds"))
 
 # You can skip everything above (except the prerequisites) and start here
 heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
-seu_red <- readRDS(file = "TenX_CellLineMix_Seurat_Keep.rds")
-MarkerGenes.roc <- read_tsv("TenX_CellLineMix_ROC_Markers.txt")
+seu_red <- readRDS(file = "SW_CellLineMix_Seurat_Keep.rds")
+MarkerGenes.roc <- read_tsv("SW_CellLineMix_ROC_Markers.txt")
 Top10Genes.ls <- lapply(split(MarkerGenes.roc, f = MarkerGenes.roc$cluster), function(x) x$gene[1:10])
 genes.ch <- unlist(Top10Genes.ls)
 
@@ -231,18 +231,21 @@ expr.tib <- tibble(cell = colnames(seu_red), CellType = seu_red@meta.data$CellTy
                    UMAP_2 = seu_red$UMAP_2,
                    data.frame( t(GetAssayData(seu_red, slot = "data")[genes.ch,])))
 
-pdf("TenX_CellLineMix_4_MarkerGenes.pdf")
+pdf("SW_CellLineMix_4_MarkerGenes.pdf")
 for (g in genes.ch) {
-    print(
-        expr.tib %>%
-            ggplot(aes_string(x = "UMAP_1", y = "UMAP_2", color = g)) +
-            geom_point_rast() +
-            scale_color_gradientn(colors = heatcol.ch[2:10]) +
-            theme_classic() +
-            theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) +
-            ggtitle(g)
-    )
+print(
+expr.tib %>%
+    ggplot(aes_string(x = "UMAP_1", y = "UMAP_2", color = g)) +
+    geom_point_rast() +
+    scale_color_gradientn(colors = heatcol.ch[2:10]) +
+    theme_classic() +
+    theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) +
+    ggtitle(g)
+)
 }
 dev.off()
+
+
+
 
 

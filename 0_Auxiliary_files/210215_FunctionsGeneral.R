@@ -1,11 +1,11 @@
 # Peter van Galen, 210215
 # General functions for analyses in the Maester project
 
-#### General ####
+# General
 message("cutf()")
 cutf <- function(x, f=1, d="/") sapply(strsplit(x, d), function(i) paste(i[f], collapse=d))
 
-#### Maegtk function that computes all heteroplasmic variants from output (from Caleb Lareau) ####
+# Function that computes all heteroplasmic variants from MAEGATK output (from Caleb Lareau). Rows represents a position along the mitochondrial genome and the three possible disagreements with the reference (except 3107 has four possible disagreements because the reference is N)
 message("computeAFMutMatrix()")
 computeAFMutMatrix <- function(SE){
   cov <- assays(SE)[["coverage"]]+ 0.000001

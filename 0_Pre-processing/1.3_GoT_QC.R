@@ -179,7 +179,6 @@ dev.off()
 # Save results
 #================================
 
-
 write.table(Cell_info.dt[,c("BC", "wtUMIs", "mutUMIs")], file = gsub("summTable", "FilteredCells", summtable), quote = F, row.names = F, sep = "\t")
 sessionInfo()
 

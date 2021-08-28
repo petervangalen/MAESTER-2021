@@ -39,7 +39,7 @@ all(colnames(af.dm) == colnames(seu))
 cells.tib <- as_tibble(seu@meta.data, rownames = "cell")
 
 # Variants of interest
-voi.ch <- read_tsv("210124_vois.txt")$var
+voi.ch <- read_tsv("4.2_vois.txt")$var
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -57,23 +57,25 @@ for (v in voi.ch) {
     positive_cells.ls[[v]] <- current_cells.ch
 }
 
-# Save a tibble with cell, variant, clone, cell type information
+# Save a tibble with cell, variant, coverage, clone, cell type information
 positive_cells.tib <- as_tibble(bind_rows(lapply(positive_cells.ls, function(x) data.frame(cell = x)), .id = "variant")[,2:1]) %>%
     mutate(variant = factor(variant, levels = voi.ch))
+cov.mat <- as.matrix( assays(maegatk.rse)$coverage )
+positive_cells.tib$cov <- apply(positive_cells.tib, 1, function(x) { cov.mat[as.numeric(cutf(x[2], d = "_")),x[1]] } )
 positive_cells.tib <- positive_cells.tib %>%
     mutate(clone = gsub("6205_G>A|9164_T>C", "6205_G>A-9164_T>C", gsub(
         "10158_T>A|6293_T>C", "10158_T>A-6293_T>C", gsub(
             "1415_G>A|9753_G>A", "1415_G>A-9753_G>A", variant)))) %>%
     mutate(clone = factor(clone, levels = unique(clone)))
 positive_cells.tib <- positive_cells.tib %>% left_join(dplyr::select(as_tibble(seu@meta.data, rownames = "cell"), cell, CellType))
-write_tsv(positive_cells.tib, file = "210204_positive_cells.txt")
+write_tsv(positive_cells.tib, file = "4.3_positive_cells.txt")
 
 # Save a tibble with cell type counts per clone
 cell_type_numbers.tib <- cells.tib %>% group_by(CellType) %>% dplyr::count(name = "all_cells") %>% ungroup
 cell_type_numbers_variants.tib <- positive_cells.tib %>% select(variant, CellType) %>% group_by(variant, CellType) %>% summarize(number = n()) %>%
     pivot_wider(id_cols = CellType, names_from = variant, values_from = number) %>% replace(is.na(.), 0)
 cell_type_numbers.tib <- left_join(cell_type_numbers.tib, cell_type_numbers_variants.tib, by = "CellType")
-write_tsv(cell_type_numbers.tib, file = "210204_cell_type_numbers.txt")
+write_tsv(cell_type_numbers.tib, file = "4.3_cell_type_numbers.txt")
 
 
 #~~~~~~~~~~~~~~~~#
@@ -88,7 +90,7 @@ plot.tib <- transpose_numbers.tib %>%
     pivot_longer(-clone, names_to = "CellType", values_to = "Number of cells") %>%
     mutate(CellType = factor(CellType, levels = popcol.df$name[1:14]))
 
-pdf("210204_1_CellTypeBarplots.pdf")
+pdf("4.3_1_CellTypeBarplots.pdf")
 
 ggplot(filter(plot.tib, clone != "all_cells"), aes(x = clone, y = `Number of cells`, fill = CellType)) +
     geom_bar(position = "stack", stat = "identity") +
@@ -107,12 +109,12 @@ dev.off()
 
 # Add frequency and normalized frequency
 cell_type_freq.tib <- cell_type_numbers.tib %>%
-    mutate(across(-CellType, .fns = list(freq = ~ .x / sum(.x) * 100,           # equivalent to function(x) {x / sum(x) * 100 }
+    mutate(across(-CellType, .fns = list(freq = ~ .x / sum(.x) * 100, # equivalent to function(x) {x / sum(x) * 100 }
                                          norm = ~ (.x / sum(.x)) / (all_cells / sum(all_cells)))))
 
 # Save for Tyler's P-value calcuations
-cell_type_freq.tib %>% dplyr::select(CellType, contains("freq")) %>% write_tsv(file = "210204_cell_type_freq.txt")
-cell_type_freq.tib %>% dplyr::select(CellType, contains("norm")) %>% write_tsv(file = "210204_cell_type_norm.txt")
+cell_type_freq.tib %>% dplyr::select(CellType, contains("freq")) %>% write_tsv(file = "4.3_cell_type_freq.txt")
+cell_type_freq.tib %>% dplyr::select(CellType, contains("norm")) %>% write_tsv(file = "4.3_cell_type_norm.txt")
 
 
 #~~~~~~~~~~~~~~~~~~#
@@ -128,7 +130,7 @@ cell_type_numbers2.tib <- left_join(cell_type_numbers2.tib, cell_type_numbers_cl
 
 # Add frequency and normalized frequency
 cell_type_freq2.tib <- cell_type_numbers2.tib %>%
-    mutate(across(-CellType, .fns = list(freq = ~ .x / sum(.x) * 100,           # equivalent to function(x) {x / sum(x) * 100 }
+    mutate(across(-CellType, .fns = list(freq = ~ .x / sum(.x) * 100, # equivalent to function(x) {x / sum(x) * 100 }
                   norm = ~ (.x / sum(.x)) / (all_cells / sum(all_cells)))))
 
 # Which ones to plot?
@@ -164,7 +166,7 @@ cell_type_freq2.tib %>% dplyr::select(CellType, contains(current.clones)) %>%
     theme(aspect.ratio = 1, panel.border = element_blank())
 
 # Plot normalized frequency
-pdf("210204_2_RadarPlot.pdf")
+pdf("4.3_2_RadarPlot.pdf")
 cell_type_freq2.tib %>% dplyr::select(CellType, contains(c("all_cells", current.clones))) %>%
     add_row(CellType = "empty") %>%
     replace(is.na(.), 0) %>%

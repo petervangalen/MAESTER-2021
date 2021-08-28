@@ -18,6 +18,7 @@ library(ggrastr)
 library(ComplexHeatmap)
 library(readxl)
 library(ggrepel)
+library(gridExtra)
 library(circlize) # for colorRamp2
 
 rm(list=ls())
@@ -79,16 +80,20 @@ start_time <- Sys.time()
 quantiles.ls <- lapply(quantiles, function(x) lapply(CellSubsets.ls, function(y) apply(af.dm[,y], 1, quantile, x) ))
 Sys.time() - start_time
 
-# Get the mean quality for each variant. This can take a few hours.
+# Get the mean quality for each variant.
+assays.ls <- lapply(maegatk.rse@assays$data, function(x) as.matrix(x))
 start_time <- Sys.time()
 qual.num <- sapply(rownames(af.dm), function(x) {
+    #x <- "2141_T>C"
     pos <- as.numeric( cutf(x, d = "_") )
-    message(pos)
     mut <- cutf(x, d = ">", f = 2)
-    # Only use cells in which the base was sequenced. Use reverse only because that's how we amplify transcripts.
-    covered <- assays(maegatk.rse)[[str_c(mut, "_counts_rev")]][pos,] > 0
-    # Get the mean quality for this call
-    qual <- mean( assays(maegatk.rse)[[str_c(mut, "_qual_rev")]][pos, covered] )
+    # Get the mean quality of reads for this call (only use cells in which the base was sequenced) - forward
+    covered_fw <- assays.ls[[str_c(mut, "_counts_fw")]][pos,] > 0
+    qual_fw <- assays.ls[[str_c(mut, "_qual_fw")]][pos, covered_fw]
+    # Same for reverse
+    covered_rev <- assays.ls[[str_c(mut, "_counts_rev")]][pos,] > 0
+    qual_rev <- assays.ls[[str_c(mut, "_qual_rev")]][pos, covered_rev]
+    qual <- mean(c(qual_fw, qual_rev))
     return(qual)
 })
 Sys.time() - start_time
@@ -98,8 +103,8 @@ vars.tib <- as_tibble(do.call(cbind, c(mean_af.ls, mean_cov.ls, unlist(quantiles
 vars.tib <- add_column(vars.tib, quality = qual.num, .before = 2)
 
 # Save for fast loading next time
-write_tsv(vars.tib, "210124_all_variants.txt")
-vars.tib <- read_tsv("210124_all_variants.txt")
+write_tsv(vars.tib, "4.2_all_variants.txt")
+vars.tib <- read_tsv("4.2_all_variants.txt")
 
 
 #~~~~~~~~~~~~~~~~~~#
@@ -167,7 +172,7 @@ tib <- tibble(x = c(0.1, 0.1, 80/4.8,  99.5, 99.9, 99.9, 5*100/6,  0.5, 0.1),
 points.tib <- backgroundvars.tib %>% filter(mean_cov.unionCells > 5) %>%
     mutate(block = var %in% blocklist.var) %>% arrange(block)
 
-pdf("210124_1_Blocklist.pdf")
+pdf("4.2_1_Blocklist.pdf")
 for (lim in list(c(0,100), c(0,1), c(99,100))) {
     print(
         ggplot(data = tib, mapping = aes(x = x, y = y)) +
@@ -197,7 +202,7 @@ voi.ch <- vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in%
 # This one is background noise
 voi.ch <- voi.ch[!grepl("1583_A>G", voi.ch)]
 # Assess transitions vs. transversions
-str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
+length(voi.ch); str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
 
 # Compare VAF between lymphoid and myeloid
 vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist.var) %>% arrange(var %in% voi.ch) %>%
@@ -216,7 +221,7 @@ vars.tib %>% filter(mean_cov.unionCells > 5, quality >= 30, ! var %in% blocklist
 #### Plot UMAPs ####
 #~~~~~~~~~~~~~~~~~~#
 
-pdf(str_c("210124_2_UMAPs.pdf"))
+pdf(str_c("4.2_2_UMAPs.pdf"))
 for (v in voi.ch) {
     message(v)
     
@@ -286,7 +291,7 @@ hm1 <- Heatmap(cor.mat,
                width = unit(100, "mm"),
                height = unit(100, "mm"),
                column_title = ngroups)
-pdf(str_c("210124_3_Correlation.pdf"))
+pdf(str_c("4.2_3_Correlation.pdf"))
 print(hm1)
 dev.off()
 
@@ -348,12 +353,12 @@ hm2 <- Heatmap(plot_order.mat,
                #width = unit(100, "mm"),
                #height = unit(100, "mm"),
                use_raster = T)
-pdf(str_c("210124_4_Heatmap.pdf"), width = 12, height = 6)
+pdf(str_c("4.2_4_Heatmap.pdf"), width = 12, height = 6)
 print(hm2)
 dev.off()
 
 # Save variants
-write_tsv(tibble(var = voi.ch), file = str_c("210124_vois.txt"))
+write_tsv(tibble(var = voi.ch), file = str_c("4.2_vois.txt"))
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -383,7 +388,7 @@ for (v in setdiff(voi.ch, c("683_G>A", "2593_G>A"))) {
     cells.tib$cov_voi <- NULL
 }
 
-pdf(file = str_c("210124_2_UMAPs_combined.pdf"), height = (11-2)*1.5, width = (8.5-2)*1.5)
+pdf(file = str_c("4.2_2_UMAPs_combined.pdf"), height = (11-2)*1.5, width = (8.5-2)*1.5)
 grid.arrange(grobs = p, ncol = 4)
 dev.off()
 
@@ -395,7 +400,7 @@ dev.off()
 # Mean depth in each cell type
 mean_depth.tib <- tibble(cell = colnames(maegatk.rse),
                          depth = maegatk.rse@colData$depth)
-pdf("210124_5_Coverage_per_CellType.pdf")
+pdf("4.2_5_Coverage_per_CellType.pdf")
 mean_depth.tib %>% left_join(select(cells.tib, cell, CellType), by = "cell") %>%
     group_by(CellType) %>% summarize(mean_depth = mean(depth)) %>%
     ggplot(aes(x = CellType, y = mean_depth)) +
@@ -412,7 +417,8 @@ subset_cov.dgm <- assays(maegatk.rse)[["coverage"]][as.numeric(cutf(voi.ch, d = 
 rownames(subset_cov.dgm) <- voi.ch
 cov.tib <- as_tibble(t(as.matrix(subset_cov.dgm)), rownames = "cell") %>%
     left_join(select(cells.tib, cell, CellType), by = "cell") %>% relocate(CellType, .before = 2)
-pdf("210124_6_Coverage_per_Variant.pdf", width = 12)
+
+pdf("4.2_6_Coverage_per_Variant.pdf", width = 12)
 cov.tib %>% pivot_longer(cols = -c(cell, CellType), names_to = "variant", values_to = "cov") %>%
     group_by(variant, CellType) %>% summarize(mean_cov = mean(cov)) %>%
     mutate(variant = factor(variant, levels = voi.ch)) %>%
@@ -456,14 +462,14 @@ names(varcol.ch) <- voi_order.ch
 barcol.ch <- varcol.ch[match(labels.ch, names(varcol.ch))]
 
 # Genes
-GenePos.tib <- tibble(Names = c("MT.ATP6", "MT.ATP8", "MT.COX1", "MT.COX2", "MT.COX3", "MT.CYTB", "MT.ND1", "MT.ND2", "MT.ND3",
+GenePos.tib <- tibble(Names = c("MT.ATP6", "MT.ATP8", "MT.CO1", "MT.CO2", "MT.CO3", "MT.CYB", "MT.ND1", "MT.ND2", "MT.ND3",
                                 "MT.ND4", "MT.ND4L", "MT.ND5", "MT.ND6", "MT.RNR1", "MT.RNR2"),
                       start = c(8527, 8366, 5904, 7586, 9207, 14747, 3307, 4470, 10059, 10760, 10470, 12337, 14149, 648, 1671), 
                       end = c(9207, 8572, 7445, 8269, 9990, 15887, 4262, 5511, 10404, 12137, 10766, 14148, 14673, 1601, 3229))
 GenePos.tib <- GenePos.tib %>% arrange(start) %>%
     mutate(mid = round((end-start)/2+start,0), ycoord = rep(c(-0.05,-0.07), length.out = 15))
 
-pdf("210124_7_Variant_locations.pdf", height = 3, width = 10)
+pdf("4.2_7_Variant_locations.pdf", height = 3, width = 10)
 par(xpd=T)
 barplot(voi_along_chrM.num, border = barcol.ch,
         yaxt = "n", xlab = "position", cex.names = 0, space = 0, ylim = c(0,1.5))

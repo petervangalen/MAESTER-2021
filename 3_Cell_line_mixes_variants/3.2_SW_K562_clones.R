@@ -27,7 +27,7 @@ popcol.df <- read_excel("../MAESTER_colors.xlsx")
 heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
 
 # Import MAEGATK data for Seq-Well S^3 Cell Line Mix (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
-se.ls <- readRDS("../1_MT_Coverage/SW_CellLineMix_mr3_maegatk.rds")
+maegatk.rse <- readRDS("../1_MT_Coverage/SW_CellLineMix_All_mr3_maegatk.rds")
 
 # This tibble contains UMAP coordinates and cell type classifications
 # Available at https://github.com/vangalenlab/MAESTER-2021; see 201101_SW_CellLineMix_variants.R)
@@ -39,12 +39,12 @@ cells.tib <- read_rds("SW_CellLineMix_Cells.rds")
 #~~~~~~~~~~~~~~~~~~~~#
 
 # Put maegatk object in the same order as cells.tib
-maegatk.rse <- se.ls[[2]][,cells.tib$cell]
+maegatk.rse <- maegatk.rse[,cells.tib$cell]
 
 # Prepare allele frequency matrix
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
 
-# Group cell IDs by cell type classification. Use the cell type classification from maegatk, not RNA-seq.
+# Group cell IDs by cell type classification.
 table( as.character(cells.tib$CellType_RNA) == as.character(cells.tib$CellType_MT) )
 CellSubsets.ls <- list(unionCells = cells.tib$cell,
                        K562 = filter(cells.tib, CellType_MT == "K562")$cell,
@@ -62,29 +62,32 @@ cells.tib %>% mutate(coverage = maegatk.rse$depth) %>%
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # This section takes a while; consider skipping to read_tsv at the end.
+start_time <- Sys.time()
 
 # Get the mean allele frequency and coverage for every cell subset.
 mean_af.ls <- lapply(CellSubsets.ls, function(x) rowMeans(af.dm[,x]))
-mean_cov.ls <- lapply(CellSubsets.ls, function(x) rowMeans(assays(se.ls[[2]])[["coverage"]][,x])[as.numeric(cutf(rownames(af.dm), d = "_"))])
+mean_cov.ls <- lapply(CellSubsets.ls, function(x) rowMeans(assays(maegatk.rse)[["coverage"]][,x])[as.numeric(cutf(rownames(af.dm), d = "_"))])
 names(mean_af.ls) <- paste0("mean_af.", names(mean_af.ls))
 names(mean_cov.ls) <- paste0("mean_cov.", names(mean_cov.ls))
 
 # Get the quantiles of the VAFs of each variant in each cell subset. This takes 2.5 minutes.
 quantiles <- c("q01" = 0.01, "q10" = 0.1, "q50" = 0.5, "q90" = 0.9, "q99" = 0.99)
-start_time <- Sys.time()
 quantiles.ls <- lapply(quantiles, function(x) lapply(CellSubsets.ls, function(y) apply(af.dm[,y], 1, quantile, x) ))
 Sys.time() - start_time
 
-# Get the mean quality for each variant. This takes an hour.
-start_time <- Sys.time()
+# Get the mean quality for each variant.
+assays.ls <- lapply(maegatk.rse@assays$data, function(x) as.matrix(x))
 qual.num <- sapply(rownames(af.dm), function(x) {
+    #x <- "2141_T>C"
     pos <- as.numeric( cutf(x, d = "_") )
-    message(pos)
     mut <- cutf(x, d = ">", f = 2)
-    # Only use cells in which the base was sequenced. Use reverse only because that's how we amplify transcripts.
-    covered <- assays(se.ls[[2]])[[str_c(mut, "_counts_rev")]][pos,] > 0
-    # Get the mean quality for this call
-    qual <- mean( assays(se.ls[[2]])[[str_c(mut, "_qual_rev")]][pos, covered] )
+    # Get the mean quality of reads for this call (only use cells in which the base was sequenced) - forward
+    covered_fw <- assays.ls[[str_c(mut, "_counts_fw")]][pos,] > 0
+    qual_fw <- assays.ls[[str_c(mut, "_qual_fw")]][pos, covered_fw]
+    # Same for reverse
+    covered_rev <- assays.ls[[str_c(mut, "_counts_rev")]][pos,] > 0
+    qual_rev <- assays.ls[[str_c(mut, "_qual_rev")]][pos, covered_rev]
+    qual <- mean(c(qual_fw, qual_rev))
     return(qual)
 })
 Sys.time() - start_time
@@ -118,6 +121,8 @@ voi.ch <- vars.tib %>%
     .$var
 # Replace 9117_T>C, which comes up because it has no coverage in some cells, with another homoplasmic variant (2141_T>C), that has better coverage
 voi.ch <- str_replace_all(voi.ch, "9117_T>C", "2141_T>C")
+# The following variants were not detected in orthogonal bulk ATAC-seq analysis, so I will remove them
+voi.ch <- setdiff(voi.ch, c("5378_A>G", "6384_G>A"))
 # Assess transitions vs. transversions
 str_view(voi.ch, "G>A|A>G|C>T|T>C"); mean( str_count(voi.ch, "G>A|A>G|C>T|T>C") )
 #filter(vars.tib, var %in% voi.ch) %>% view
@@ -192,7 +197,7 @@ var.clust <- hclust(as.dist(1-cor.mat))
 
 # Assess how correlated variants are and group them together
 plot(var.clust$height, ylim = c(0, max(var.clust$height)))
-# Make 15 groups of variants, i.e. 9 alone and 5 groups of two variants and one group of three variants. This is determined empirically.
+# Make groups of variants, i.e. 10 alone and 5 groups of two variants. This number is determined empirically.
 ngroups <- 15
 
 # Correlation heatmap
@@ -263,6 +268,12 @@ hm2 <- Heatmap(plot_reduced.mat,
 pdf(paste0("SW_K562_clones_4_Heatmap.pdf"))
 print(hm2)
 dev.off()
+
+# Save data for comparison with bulk ATAC-seq
+vars.tib %>% filter(var %in% voi.ch) %>%
+    select(var, quality, mean_af.unionCells, mean_af.K562, mean_af.BT142, mean_cov.unionCells, mean_cov.K562, mean_cov.BT142) %>%
+    write_tsv(file = "Figure1H_vars.txt")
+
 
 
 

@@ -35,8 +35,7 @@ names(mycol.ch) <- popcol.df$name
 seu <- readRDS("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/201214_Seurat_GoT/BPDCN712_Seurat_Genotyped.rds")
 
 # Load maegatk object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
-se.ls <- readRDS("../1_MT_Coverage/TenX_BPDCN712_mr3_maegatk.rds")
-maegatk.rse <- se.ls[[2]]
+maegatk.rse <- readRDS("../1_MT_Coverage/TenX_BPDCN712_All_mr3_maegatk.rds")
 
 # Generate cell IDs that will match Maegtk
 seu$cellMerge <- paste0(cutf(colnames(seu), d = "-", f = 1), "-1")
@@ -93,8 +92,8 @@ markerGenes <- FindAllMarkers(seu, slot = "data", logfc.threshold = 0.25, min.pc
 markergenes.dt.ls <- lapply(split(markerGenes, f = markerGenes$cluster), function(x) data.table(x))
 markergenes.dt.ls <- lapply(markergenes.dt.ls, function(x) setorder(x, -avg_logFC))
 markergenes.tib <- as_tibble( do.call(cbind, lapply(markergenes.dt.ls, function(x) x$gene[1:50])) )
-write_tsv(markergenes.tib, file = "210123_MarkerGenes.txt")
-markergenes.tib <- read_tsv("210123_MarkerGenes.txt")
+write_tsv(markergenes.tib, file = "4.1_MarkerGenes.txt")
+markergenes.tib <- read_tsv("4.1_MarkerGenes.txt")
 
 # Scale data (don't use cell cycle regression which takes a long time and does not improve visualization)
 #seu <- ScaleData(seu, features = rownames(seu), vars.to.regress = "Cycle")
@@ -113,7 +112,7 @@ ndims <- 9
 seu <- RunUMAP(seu, dims = 1:ndims, seed.use = 42)
 
 # Quick visualization
-pdf(str_c("210123_1_UMAP_dim", ndims, ".pdf"))
+pdf(str_c("4.1_1_UMAP_dim", ndims, ".pdf"))
 print(
     DimPlot(seu, reduction = "umap", cols = mycol.ch) +
         theme(aspect.ratio = 1)
@@ -179,7 +178,7 @@ bad_cells <- unique(c(bad_cells_1$cell, bad_cells_2$cell, bad_cells_3$cell, bad_
 seu$contaminated <- colnames(seu) %in% bad_cells
 #subset(seu, subset = contaminated == T)@meta.data %>% as_tibble(rownames = "cell") %>% view
 
-pdf("210123_2_Contamination.pdf")
+pdf("4.1_2_Contamination.pdf")
 as_tibble(seu@meta.data, rownames = "cell") %>%
     pivot_longer(cols = str_c(colnames(top_markers.tib), "_score")) %>%
     ggplot() +
@@ -197,7 +196,7 @@ dev.off()
 seu <- subset(seu, contaminated == F)
 
 # Plot
-pdf(str_c("210123_3_UMAP_clean.pdf"), width = 6, height = 6)
+pdf(str_c("4.1_3_UMAP_clean.pdf"), width = 6, height = 6)
 print(
 as_tibble(seu@meta.data, rownames = "cell") %>% #.$CellType %>% levels
     mutate(PlotOrder = factor(CellType, levels = c("CTL", "NK", "T", "EarlyE", "LateE",
