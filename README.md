@@ -1,7 +1,7 @@
 # MAESTER-2021
 
 ## Outline
-A collection of scripts for the analysis of MAESTER data. This outline (also Supplemental Figure 5 in the paper) shows how scripts are used.
+This repository contains a collection of scripts for the analysis of the MAESTER paper. The following figure (also Supplemental Figure 5 in the paper) shows the general workflow.
 
 ![outline](Auxiliary_files/Figure_S5_pipelines.png)
 
