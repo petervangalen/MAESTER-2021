@@ -7,9 +7,8 @@ This repository contains a collection of scripts for the analysis of the MAESTER
 
 
 
-## Pre-processing of sequencing reads and quality controls.
+## Pre-processing of sequencing reads and quality controls
 
-#### Various scripts for read processing
 Filter for cell barcodes (CBs) and generate fastq files with CB and unique molecular identifiers (UMIs) from the Read 1 fastq in the read ID of the Read 2 fastq:
 [Assemble_fastq.R](Pre-processing/Assemble_fastq.R)
 
