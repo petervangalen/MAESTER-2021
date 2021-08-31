@@ -1,5 +1,5 @@
 # Peter van Galen, 210215
-# General functions for analyses in the Maester project
+# General functions for analyses in the MAESTER project
 
 # General
 message("cutf()")
