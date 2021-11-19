@@ -1,5 +1,5 @@
-# Peter van Galen, 210228
-# Various numbers for results text and response to reviewers.
+# Peter van Galen, 211107
+# Various numbers for results text and response to reviewers. Much of this is superfluous.
 
 # Prerequisites
 options(stringsAsFactors = FALSE)
@@ -12,7 +12,7 @@ library(Matrix)
 library(readxl)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/6_TET2_mutations")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/6_TET2_mutations")
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
 source("../210215_FunctionsGeneral.R")
@@ -28,9 +28,9 @@ maegatk.rse <- readRDS("../4_CH_sample/BPDCN712_Maegatk_Final.rds")
 af.dm <- data.matrix(computeAFMutMatrix(maegatk.rse))*100
 
 # Clone information (available at https://github.com/vangalenlab/MAESTER-2021)
-positive_cells.tib <- read_tsv("../4_CH_sample/4.3_positive_cells.txt")
+positive_cells.tib <- read_tsv("../4_CH_sample/4.4_positive_cells.txt")
 
-# TET2 and ASXL1 mutated / wild-type transcript calls (generated in thes script 6.1_TET2_heatmap.R)
+# TET2 and ASXL1 mutated / wild-type transcript calls (generated in the script 6.1_TET2_heatmap.R)
 got.tib <- read_tsv("got.txt")
 
 
@@ -41,7 +41,7 @@ ncol(seu)
 
 ### GoT - All cells ###
 sum(got.tib$wtUMIs)
-# 510 wild-type transcripts in total
+# 509 wild-type transcripts in total
 
 sum(got.tib$mutUMIs)
 # 55 mutated transcripts in total
@@ -67,7 +67,7 @@ positive_cells.tib %>% .$cell %>% unique %>% length
 got_clones.tib <- got.tib %>% filter(cell %in% positive_cells.tib$cell)
 
 sum(got_clones.tib$wtUMIs)
-# 119 wild-type transcripts in total
+# 118 wild-type transcripts in total
 
 sum(got_clones.tib$mutUMIs)
 # 17 mutated transcripts
@@ -91,14 +91,8 @@ unique(positive_cells.tib$cell) %in% filter(got.tib, grepl("ASXL1", mutation))$c
 
 transcripts_per_cell.num <- apply(got_clones.tib, 1, function(x) sum(as.numeric(x[3]), as.numeric(x[4])))
 names(transcripts_per_cell.num) <- got_clones.tib$cell
-sum(transcripts_per_cell.num) # 136 transcripts
+sum(transcripts_per_cell.num) # 135 transcripts
 length(unique(names(transcripts_per_cell.num))) # 81 cells
-# Just to confirm the numbers in Supplemental Figure 14B
-got_clones.tib %>% mutate(clone_summary = case_when(clone == "2593_G>A" ~ "2593_G>A",
-                                                      clone == "6243_G>A" ~ "6243_G>A",
-                                                      TRUE ~ "Other_variants")) %>%
-    mutate(mutation = fct_relevel(mutation, "TET2.S792X", "TET2.Q1034X", "TET2.R1216X", "TET2.H1380Y", "ASXL1.G642fs")) %>%
-    group_by(clone_summary, mutation) %>% summarize(number = n_distinct(cell))
 
 ### MAESTER - All cells ###
 # Cell IDs, assays
@@ -193,7 +187,7 @@ got.tib %>% filter(grepl("TET2", mutation)) %>% .$cell %>% unique %>% length # 3
 got.tib %>% filter(grepl("ASXL1", mutation)) %>% .$cell %>% unique %>% length # 39; 39/9346*100=0.4%
 
 # Remove all clones but 2593_G>A
-got2.tib <- got2.tib %>% mutate(clone = factor(clone, levels = c("2593_G>A"))) # "6243_G>A",
+got2.tib <- got2.tib %>% mutate(clone = factor(clone_summary, levels = c("2593_G>A"))) # "6243_G>A",
 
 got2.tib$na_count <- apply(got2.tib, 1, function(x) sum(is.na(x)))
     

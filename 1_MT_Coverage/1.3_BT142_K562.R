@@ -2,7 +2,6 @@
 # Plot coverage along chrM split by cell lines for reviewer 2 comment 2
 
 # Prerequisites -----------------------------------------------------------------------------------
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -11,8 +10,6 @@ library(ggrepel)
 library(Matrix)
 library(SummarizedExperiment)
 library(Seurat)
-#library(Matrix)
-#library(gridExtra)
 
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/1_MT_Coverage/")
 

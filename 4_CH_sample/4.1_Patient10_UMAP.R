@@ -16,7 +16,7 @@ library(SingleCellExperiment)
 library(Seurat)
 library(readxl)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/4_CH_sample")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/4_CH_sample")
 
 rm(list=ls())
 
@@ -32,7 +32,7 @@ names(mycol.ch) <- popcol.df$name
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 # Load Seurat object from the clonal hematopoiesis bone marrow aspirate (available at https://vangalenlab.bwh.harvard.edu/resources/single-cell_bpdcn/)
-seu <- readRDS("~/DropboxPartners/Projects/Single-cell_BPDCN/AnalysisDaniel/201214_Seurat_GoT/BPDCN712_Seurat_Genotyped.rds")
+seu <- readRDS("~/DropboxMGB/Projects/Single-cell_BPDCN/AnalysisDaniel/201214_Seurat_GoT/BPDCN712_Seurat_Genotyped.rds")
 
 # Load maegatk object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
 maegatk.rse <- readRDS("../1_MT_Coverage/TenX_BPDCN712_All_mr3_maegatk.rds")
@@ -90,7 +90,7 @@ seu@active.ident <- seu$CellType
 # Define cluster marker genes (this takes a while, consider reading tsv at the end instead)
 markerGenes <- FindAllMarkers(seu, slot = "data", logfc.threshold = 0.25, min.pct = 0.1, test.use = "roc", return.thresh = 0.4, only.pos = T)
 markergenes.dt.ls <- lapply(split(markerGenes, f = markerGenes$cluster), function(x) data.table(x))
-markergenes.dt.ls <- lapply(markergenes.dt.ls, function(x) setorder(x, -avg_logFC))
+markergenes.dt.ls <- lapply(markergenes.dt.ls, function(x) setorder(x, -avg_log2FC))
 markergenes.tib <- as_tibble( do.call(cbind, lapply(markergenes.dt.ls, function(x) x$gene[1:50])) )
 write_tsv(markergenes.tib, file = "4.1_MarkerGenes.txt")
 markergenes.tib <- read_tsv("4.1_MarkerGenes.txt")
@@ -114,7 +114,7 @@ seu <- RunUMAP(seu, dims = 1:ndims, seed.use = 42)
 # Quick visualization
 pdf(str_c("4.1_1_UMAP_dim", ndims, ".pdf"))
 print(
-    DimPlot(seu, reduction = "umap", cols = mycol.ch) +
+    DimPlot(seu, reduction = "umap", cols = mycol.ch[levels(seu$CellType)]) +
         theme(aspect.ratio = 1)
 )
 FeaturePlot(seu, features = "HBD")
@@ -226,7 +226,7 @@ seu@meta.data[,colnames(seu@meta.data) %in% str_c(colnames(top_markers.tib), "_s
 seu@meta.data[,grepl("Predict", colnames(seu@meta.data))] <- NULL
 seu@meta.data[,grepl("tSNE", colnames(seu@meta.data))] <- NULL
 seu <- DietSeurat(seu)
-saveRDS(seu, file = "BPDCN712_Seurat.rds")
+saveRDS(seu, file = "BPDCN712_Seurat_Final.rds")
 
 maegatk.rse <- maegatk.rse[,colnames(seu)]
-saveRDS(maegatk.rse, file = "BPDCN712_Maegatk.rds")
+saveRDS(maegatk.rse, file = "BPDCN712_Maegatk_Final.rds")

@@ -25,7 +25,7 @@ mycol.ch <- maester_colors.tib$hex
 names(mycol.ch) <- maester_colors.tib$name
 
 # Load Seurat object containing integrated single-cell data, generated in the script 5.2_Clonal_overlap.R
-seu <- readRDS("All_Seurat.rds")
+seu <- readRDS("BPDCN712_Seurat_with_TCR.rds")
 seu <- ScaleData(seu)
 
 # Load Maegtk, calculate allele frequencies (available at https://vangalenlab.bwh.harvard.edu/maester-2021/))
@@ -66,7 +66,7 @@ metadata.tib %>% mutate(TRB_higlight = factor(TRB_CDR3, levels = tcr_clones)) %>
     mutate(index = row_number()) %>% arrange(desc(index)) %>%
     ggplot(aes(x = UMAP_TNK_1, y = UMAP_TNK_2, color = TRB_higlight)) +
     geom_point(size = 0.7) +
-    scale_color_manual(values = mycol.ch, na.value = "#dcdcdc") +
+    scale_color_manual(values = mycol.ch[tcr_clones], na.value = "#dcdcdc") +
     theme_bw() +
     theme(aspect.ratio = 1, panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
     guides(color = guide_legend(override.aes = list(size = 3) ) )
@@ -76,7 +76,7 @@ metadata.tib %>% mutate(MT_highlight = factor(MT_clone, levels = mt_clones)) %>%
     mutate(index = row_number()) %>% arrange(desc(index)) %>%
     ggplot(aes(x = UMAP_TNK_1, y = UMAP_TNK_2, color = MT_highlight)) +
     geom_point(size = 0.7) +
-    scale_color_manual(values = mycol.ch, na.value = "#dcdcdc") +
+    scale_color_manual(values = mycol.ch[mt_clones], na.value = "#dcdcdc") +
     theme_bw() +
     theme(aspect.ratio = 1, panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
     guides(color = guide_legend(override.aes = list(size = 3) ) )
@@ -102,7 +102,7 @@ seu.subset@active.ident <- seu.subset$expr_groups
 # Differential gene expression between mtDNA clones of interest
 markerGenes <- FindAllMarkers(seu.subset, test.use = "roc", only.pos = TRUE)
 markergenes.dt.ls <- lapply(split(markerGenes, f = markerGenes$cluster), function(x) data.table(x))
-markergenes.dt.ls <- lapply(markergenes.dt.ls, function(x) setorder(x, -avg_logFC))
+markergenes.dt.ls <- lapply(markergenes.dt.ls, function(x) setorder(x, -avg_log2FC))
 markergenes.tib <- as_tibble( do.call(cbind, lapply(markergenes.dt.ls, function(x) x$gene[1:3])) )
 diff_genes <- unique(na.omit(unlist(markergenes.tib)))
 
@@ -136,7 +136,7 @@ plot_genes.mat[plot_genes.mat > z.lim[2]] <- z.lim[2]
 
 # Heatmap colors
 vaf.col <- colorRamp2(seq(0, 100, length.out = 9), c("#FCFCFC","#FFEDB0","#FFDF5F","#FEC510","#FA8E24","#F14C2B","#DA2828","#BE2222","#A31D1D"))
-expr.col <- read_excel("~/DropboxPartners/Pipelines/AuxiliaryFiles/PopCol.xlsx", sheet = 3, col_names = F)[[1]]
+expr.col <- c("#083160", "#2668aa", "#4794c1", "#94c5dd", "#d2e5ef", "#f7f7f7", "#fcdbc8", "#f2a585", "#d46151", "#b01b2f", "#660220")
 
 # Add annotation bars
 ha <- HeatmapAnnotation(vaf = t(af_subset.mat),

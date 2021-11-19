@@ -3,7 +3,6 @@
 
 # Prerequisites -----------------------------------------------------------------------------------
 
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -22,21 +21,22 @@ source("../210215_FunctionsGeneral.R")
 # This data is available at https://vangalenlab.bwh.harvard.edu/maester-2021/
     experiment.name <- "SW_MGH252_A"
     maegatk.full <- readRDS(file = "SW_MGH252_A_mr3_maegatk.rds")
-    metadata.df <- read.table("../8_Glioblastoma/Chadi Slack 210819/MGH252_NoM_A_C_PBMC_MetaData.txt")
+    metadata.df <- read.table("../8_Glioblastoma/Chadi email 210721/MGH252_A_C_PBMC_MetaData.txt")
     cellMerge4 <- rownames(metadata.df)
     
     experiment.name <- "SW_MGH252_C"
     maegatk.full <- readRDS(file = "SW_MGH252_C_mr3_maegatk.rds")
-    metadata.df <- read.table("../8_Glioblastoma/Chadi Slack 210819/MGH252_NoM_A_C_PBMC_MetaData.txt")
+    metadata.df <- read.table("../8_Glioblastoma/Chadi email 210721/MGH252_A_C_PBMC_MetaData.txt")
     cellMerge4 <- rownames(metadata.df)
     
     experiment.name <- "SW_MGH252_PBMC"
     maegatk.full <- readRDS(file = "SW_MGH252_PBMC_mr3_maegatk.rds")
-    metadata.df <- read.table("../8_Glioblastoma/Chadi Slack 210819/MGH252_NoM_A_C_PBMC_MetaData.txt")
+    metadata.df <- read.table("../8_Glioblastoma/Chadi email 210721/MGH252_A_C_PBMC_MetaData.txt")
     cellMerge4 <- rownames(metadata.df)
     
 
-# Use common cell barcodes for RNAseq and maegatk. This is not done in 1.2_Compare_MT_coverage.R --
+# Use common cell barcodes for RNAseq and maegatk -------------------------------------------------
+# This is not necessary if you subsetted the bam file for high-quality cell barcodes when runnig maegatk
 # Only keep cells with a cellMerge id that occurs once, intersect, plot
 cellMerge3 <- tibble(cell = cellMerge4) %>% group_by(cell) %>% filter(n()==1) %>% .$cell %>% cutf(d = "\\.", f = 2)
 cellMerge2 <- str_c(cellMerge3, "-1")
@@ -69,7 +69,6 @@ base.tib <- tibble(base = 1:16569, depth = rowMeans(assays(maegatk)[["coverage"]
 print(
     base.tib %>% ggplot() +
         geom_bar(aes(x = base, y = ifelse(depth > 1, yes = depth, no = NA)), stat = "identity", fill = "#64b53b", width = 1) + 
-        #geom_bar(aes(x = base, y = ifelse(rnaseq_depth > 1, yes = rnaseq_depth, no = NA)), stat = "identity", fill = "#fdcb25", width = 1) +
         coord_cartesian(ylim = c(1, ymax), xlim = c(700, 15900)) +
         scale_y_continuous(trans = "log10") +
         geom_segment(data = GenePos.tib, aes(x = start, y = ycoord, xend = end, yend = ycoord)) +

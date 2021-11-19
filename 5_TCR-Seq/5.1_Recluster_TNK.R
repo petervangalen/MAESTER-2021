@@ -66,7 +66,8 @@ rpl <- DimPlot(tnk, reduction = "umap", group.by = "replicate") +
     theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) +
     ggtitle(str_c("Replicate, ", ndims, " dim"))
 
-celltype <- DimPlot(tnk, reduction = "umap", group.by = "CellType", cols = mycol.ch) +
+celltype <- DimPlot(tnk, reduction = "umap", group.by = "CellType",
+                    cols = mycol.ch[intersect(names(mycol.ch), unique(tnk$CellType))]) +
     theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) +
     ggtitle("Group by cell type")
 
@@ -84,7 +85,7 @@ grid.arrange(rpl, celltype, cycleScore, clust, layout_matrix = matrix(c(1:4), nr
 #}
 dev.off()
 
-# Define cluster marker genes (this takes a while, consider reading tsv at the end instead)
+# Define cluster marker genes. This was originally done in R 3.6.2 with Seurat version 3.2.2 and gives slightly different results in R 4.1.1 with Seurat 4.0.5
 markerGenes <- FindAllMarkers(tnk, slot = "data", logfc.threshold = 0.25, min.pct = 0.1,
                               test.use = "roc", return.thresh = 0.4, only.pos = T)
 markergenes.dt.ls <- lapply(split(markerGenes, f = markerGenes$cluster), function(x) data.table(x))

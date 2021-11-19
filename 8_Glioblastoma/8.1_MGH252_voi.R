@@ -5,7 +5,6 @@
 # Prerequisites #
 #~~~~~~~~~~~~~~~#
 
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -19,7 +18,7 @@ library(ggrepel)
 library(gridExtra)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/8_Glioblastoma")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/8_Glioblastoma")
 
 ## Functions & colors (available at https://github.com/vangalenlab/MAESTER-2021)
 source("../210215_FunctionsGeneral.R")
@@ -46,8 +45,8 @@ maegatk_PBMC.full <- readRDS(file = "../1_MT_Coverage/SW_MGH252_PBMC_mr3_maegatk
 metadata.full <- read_tsv("Chadi email 210721/MGH252_A_C_PBMC_MetaData.txt")
 umap.full <- read_tsv("Chadi email 210721/MGH252_A_C_PBMC_UMAP.txt") 
 metadata.full <- metadata.full %>% left_join(umap.full) %>%
-    mutate(Site = gsub("[0-9]", "", cutf(X1, d = "\\.|_", f = 4)), .before = 2) %>%
-    mutate(cell = str_c(cutf(X1, d = "\\.", f = 2), "-", Site), .before = 2) %>%
+    mutate(Site = gsub("[0-9]", "", cutf(...1, d = "\\.|_", f = 4)), .before = 2) %>%
+    mutate(cell = str_c(cutf(...1, d = "\\.", f = 2), "-", Site), .before = 2) %>%
     select(cell, Site, CellType, UMAP_1, UMAP_2)
 colnames(maegatk_A.full) <- gsub("-1", "-A", colnames(maegatk_A.full))
 colnames(maegatk_C.full) <- gsub("-1", "-C", colnames(maegatk_C.full))

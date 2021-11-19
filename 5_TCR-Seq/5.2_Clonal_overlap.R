@@ -2,7 +2,6 @@
 # Analyze TCR-Seq data & intersect with mitochondrial variants
 
 # Prerequisites
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -25,7 +24,7 @@ names(mycol.ch) <- maester_colors.tib$name
 
 # Load data
 seu.all <- readRDS("../4_CH_sample/BPDCN712_Seurat_Final.rds") # (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
-seu.tnk <- readRDS("TNK_Seurat.rds") # Generated in the script 5.1_Recluster_TNK.R
+seu.tnk <- readRDS("TNK_Seurat.rds") # Generated in the script 5.1_Recluster_TNK.R. Alternatively you can use this (available at https://vangalenlab.bwh.harvard.edu/maester-2021/): seu.tnk <- readRDS("BPDCN712_Seurat_with_TCR.rds")
 
 # Import TCR data. Note that there are no duplicate cell barcodes because Duncan processed the data.
 tcr.tib <- read_csv("Duncan_210805/20210805_maester2_vfilter9.csv")[,-1]
@@ -68,7 +67,7 @@ pdf("5.2.1_TRB_clone_UMAPs.pdf")
 metadata.tib %>% filter(! is.na(TNK_CellType)) %>%
     ggplot(aes(x = UMAP_TNK_1, y = UMAP_TNK_2, color = TNK_CellType)) +
     geom_point(size = 0.7) +
-    scale_color_manual(values = mycol.ch) +
+    scale_color_manual(values = mycol.ch[levels(metadata.tib$TNK_CellType)]) +
     ggtitle("TNK clusters") +
     theme_bw() +
     theme(aspect.ratio = 1, panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -138,7 +137,7 @@ dev.off()
 #~~~~~~~~~~~~~~~~#
 
 # Import clonal data (available at https://github.com/vangalenlab/MAESTER-2021)
-positive_cells.tib <- read_tsv("../4_CH_sample/4.3_positive_cells.txt")
+positive_cells.tib <- read_tsv("../4_CH_sample/4.4_positive_cells.txt")
 positive_cells.tib <- positive_cells.tib %>% mutate(clone = factor(clone, levels = unique(clone)),
                                                     variant = factor(variant, levels = unique(variant)),
                                                     CellType = factor(CellType, levels = maester_colors.tib$name[1:14]))
@@ -163,7 +162,7 @@ pdf("5.2.3_MT_clone_UMAPs.pdf")
 metadata.tib %>% filter(! is.na(TNK_CellType)) %>%
     ggplot(aes(x = UMAP_TNK_1, y = UMAP_TNK_2, color = TNK_CellType)) +
     geom_point(size = 0.7) +
-    scale_color_manual(values = mycol.ch) +
+    scale_color_manual(values = mycol.ch[levels(metadata.tib$TNK_CellType)]) +
     ggtitle("TNK clusters") +
     theme_bw() +
     theme(aspect.ratio = 1, panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -217,6 +216,7 @@ heatmap.tib <- heatmap.tib %>%
 
 # Assess agreement
 adjustedRandIndex(heatmap.tib$MT_clone, heatmap.tib$TRB_CDR3) # .7394777
+write_tsv(heatmap.tib, file = "5.2_Clonal_overlap.txt")
 
 # Plot
 ht <- Heatmap(t(as.matrix(heatmap.tib)),
@@ -325,8 +325,7 @@ seu.all@meta.data$TRB_CDR3 <- metadata.tib$TRB_CDR3
 seu.all@meta.data$TRA_CDR3 <- metadata.tib$TRA_CDR3
 seu.all@meta.data$MT_clone <- metadata.tib$MT_clone
 
-saveRDS(seu.all, file = "All_Seurat.rds")
-
+saveRDS(seu.all, file = "BPDCN712_Seurat_with_TCR.rds")
 
 
 

@@ -1,7 +1,6 @@
 # Peter van Galen, 210412
 # Visualize chrM coverage from maegatk data objects. This script plots two maegatk objects together. For just one object, see 1.2_MT_coverage.R instead.
 
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -10,7 +9,7 @@ library(ggforce)
 library(SummarizedExperiment)
 
 rm(list=ls())
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/1_MT_Coverage")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/1_MT_Coverage")
 
 # Functions (available at https://github.com/vangalenlab/MAESTER-2021)
 source("../210215_FunctionsGeneral.R")
