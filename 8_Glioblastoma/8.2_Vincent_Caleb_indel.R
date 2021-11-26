@@ -1,5 +1,5 @@
 # Peter van Galen, 211108
-# Visualize indel from in glioblastoma cells
+# Visualize indel in glioblastoma cells
 
 #~~~~~~~~~~~~~~~#
 # Prerequisites #

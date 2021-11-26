@@ -41,7 +41,7 @@ maegatk_A.full <- readRDS(file = "../1_MT_Coverage/SW_MGH252_A_mr3_maegatk.rds")
 maegatk_C.full <- readRDS(file = "../1_MT_Coverage/SW_MGH252_C_mr3_maegatk.rds")
 maegatk_PBMC.full <- readRDS(file = "../1_MT_Coverage/SW_MGH252_PBMC_mr3_maegatk.rds")
 
-# Wrangle & make cell barcodes match
+# Wrangle & make cell barcodes match. This data is available at https://github.com/vangalenlab/MAESTER-2021/
 metadata.full <- read_tsv("Chadi email 210721/MGH252_A_C_PBMC_MetaData.txt")
 umap.full <- read_tsv("Chadi email 210721/MGH252_A_C_PBMC_UMAP.txt") 
 metadata.full <- metadata.full %>% left_join(umap.full) %>%
