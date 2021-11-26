@@ -1,12 +1,10 @@
 # Peter van Galen, 201119
 # Detect subclones in K562 cells from the SW cell line mixing experiment
 
-
 #~~~~~~~~~~~~~~~~~~~~~#
 #### Prerequisites ####
 #~~~~~~~~~~~~~~~~~~~~~#
 
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -18,7 +16,7 @@ library(ComplexHeatmap)
 library(readxl)
 library(ggrastr)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
 rm(list=ls())
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
@@ -30,7 +28,7 @@ heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatc
 maegatk.rse <- readRDS("../1_MT_Coverage/SW_CellLineMix_All_mr3_maegatk.rds")
 
 # This tibble contains UMAP coordinates and cell type classifications
-# Available at https://github.com/vangalenlab/MAESTER-2021; see 201101_SW_CellLineMix_variants.R)
+# Available at https://github.com/vangalenlab/MAESTER-2021; generated in 3.1_SW_CellLineMix_variants.R
 cells.tib <- read_rds("SW_CellLineMix_Cells.rds")
 
 

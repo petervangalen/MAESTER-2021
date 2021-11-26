@@ -2,12 +2,10 @@
 # Detect subclones in K562 cells from the 10X cell line mixing experiment
 # This is similar to 3.2_SW_K562_clones.R
 
-
 #~~~~~~~~~~~~~~~~~~~~~#
 #### Prerequisites ####
 #~~~~~~~~~~~~~~~~~~~~~#
 
-options(stringsAsFactors = FALSE)
 options(scipen = 999)
 
 library(tidyverse)
@@ -19,7 +17,7 @@ library(ComplexHeatmap)
 library(readxl)
 library(ggrastr)
 
-setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
+setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_variants")
 rm(list=ls())
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
@@ -31,7 +29,7 @@ heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatc
 maegatk.rse <- readRDS("../1_MT_Coverage/TenX_CellLineMix_All_mr3_maegatk.rds")
 
 # This tibble contains UMAP coordinates and cell type classifications
-# Available at https://github.com/vangalenlab/MAESTER-2021; see 201129_TenX_CellLineMix_variants.R)
+# Available at https://github.com/vangalenlab/MAESTER-2021; generated in 3.3_TenX_CellLineMix_variants.R
 cells.tib <- read_rds("TenX_CellLineMix_Cells.rds")
 
     
