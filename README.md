@@ -38,7 +38,7 @@ These scripts were used to analyze cells from the clonal hematopoiesis bone marr
 This folder includes the analyses of the T-cell Receptor Enrichment to linK clonotypes by sequencing (TREK-seq) protocol. Duncan Morgan performed initial processing using Jupyter, followed by downstream analyses to link mtDNA variants to TCR clonotypes.
 
 #### 6. TET2 mutations
-This folder includes analyses to intersect TET2 mutations (detected by Genotyping of Transcriptomes) with mtDNA mutations (detected by MAESTER).
+This folder includes analyses to intersect TET2 mutations (detected by Genotyping of Transcriptomes) with mtDNA variants (detected by MAESTER).
 
 #### 7. Trajectory analysis
 Slingshot was used to analyze HSC differentiation trajectories, including the assignment of pseudotime values and density plots of cells along the trajectories.
