@@ -63,7 +63,7 @@ GenePos.tib <- tibble(Names = c("MT.ATP6", "MT.ATP8", "MT.CO1", "MT.CO2", "MT.CO
 GenePos.tib <- GenePos.tib %>% arrange(start) %>%
     mutate(mid = round((end-start)/2+start,0), ycoord = rep(c(ymax*1.2,ymax*1.1), length.out = 15))
 
-# Plot
+# Plot coverage along chrM
 base.tib <- tibble(base = 1:16569, depth = rowMeans(assays(maegatk)[["coverage"]]))
 
 print(
