@@ -12,7 +12,7 @@ rm(list=ls())
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/1_MT_Coverage")
 
 # Functions (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 
 
 #~~~~~~~~~~~#

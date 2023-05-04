@@ -24,7 +24,7 @@ rm(list=ls())
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/4_CH_sample")
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 popcol.df <- read_excel("../MAESTER_colors.xlsx")
 mycol.ch <- popcol.df$hex
 names(mycol.ch) <- popcol.df$name

@@ -22,7 +22,7 @@ setwd("~/DropboxPartners/Projects/Maester/AnalysisPeter/3_Cell_line_mixes_varian
 rm(list=ls())
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 popcol.df <- read_excel("../MAESTER_colors.xlsx")
 heatcol.ch <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
 

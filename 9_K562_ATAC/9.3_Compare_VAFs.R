@@ -14,7 +14,7 @@ setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/9_K562_ATAC/")
 rm(list=ls())
 
 # Functions (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#

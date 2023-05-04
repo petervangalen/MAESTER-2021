@@ -17,7 +17,7 @@ library(data.table)
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/5_TCR-Seq/")
 
 rm(list=ls())
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
 maester_colors.tib <- read_excel("../MAESTER_colors.xlsx")

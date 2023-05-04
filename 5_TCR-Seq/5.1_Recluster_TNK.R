@@ -18,7 +18,7 @@ setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/5_TCR-Seq/")
 rm(list=ls())
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 popcol.tib <- read_excel("../MAESTER_colors.xlsx")
 mycol.ch <- popcol.tib$hex
 names(mycol.ch) <- popcol.tib$name

@@ -14,7 +14,7 @@ rm(list=ls())
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/6_TET2_mutations")
 
 # Functions and colors (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 
 # Load Seurat object (available at https://vangalenlab.bwh.harvard.edu/maester-2021/)
 seu <- readRDS("../4_CH_sample/BPDCN712_Seurat_Final.rds")

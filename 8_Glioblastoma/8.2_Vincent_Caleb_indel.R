@@ -22,7 +22,7 @@ rm(list=ls())
 setwd("~/DropboxMGB/Projects/Maester/AnalysisPeter/8_Glioblastoma")
 
 # Functions & colors (available at https://github.com/vangalenlab/MAESTER-2021)
-source("../210215_FunctionsGeneral.R")
+source("../Auxiliary_files/210215_FunctionsGeneral.R")
 heat.col <- read_excel("../MAESTER_colors.xlsx", sheet = 2, col_names = "heatcol")$heatcol
 celltype.col <- c(AC = "#ffebcd", MES1 = "#ffd700", MES2 = "#bc8f8f", NPC1 = "#daa520", NPC2 = "#ff4500",
                   OPC = "#7fff00", Oligo = "#4682b4", Tumor = "#00ff7f", Malignant = "#b0e0e6", Cycling = "#5f9ea0",
