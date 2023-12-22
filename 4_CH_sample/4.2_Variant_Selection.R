@@ -166,7 +166,7 @@ for (x in 1:nrow(conditions.tib)) {
 
     # Which cells are positive for at least one of the variants?
     af_subset.dm <- af.dm[voi.ch,]
-    positive_cells <- colnames( af_subset.dm[,colSums(af_subset.dm > 1)] )
+    positive_cells <- colnames( af_subset.dm[,colSums(af_subset.dm > 1) > 0] ) 
     
     # Add information to summary table
     conditions.tib[x,"n_vois"] <- length(voi.ch)
