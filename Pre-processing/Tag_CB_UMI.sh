@@ -2,7 +2,7 @@
 
 # Peter van Galen, 191004
 # Move cell barcode (CB) and unique molecular identifier (UMI) from read identifier to sam tags.
-# Resulting bam file will have tags for cell barcode (CB) and UMI (UB) as per 10X convention, https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/bam
+# Resulting bam file will have tags for cell barcode (CB) and UMI (UB) as per 10X convention, https://www.10xgenomics.com/support/software/cell-ranger/latest/analysis/outputs/cr-outputs-bam
 # These tags are required to run maegatk software
 
 # Example execution:
